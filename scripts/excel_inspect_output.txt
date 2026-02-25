@@ -1,0 +1,140 @@
+=== SHEET: NQ can xu ly ===
+Total rows: 996
+
+HEADER ROW 1:
+  col[0] = STT
+  col[1] = Tên gọi văn bản
+  col[2] = Cơ quan soạn thảo
+  col[3] = Hình thức xử lý
+  col[7] = Người xử lý
+  col[8] = Văn bản đăng ký xây dựng NQ của cơ quan soạn thảo
+  col[9] = Ngày nhận/Số vb phúc đáp
+  col[10] = Văn bản đăng ký xây dựng NQ của UBND tỉnh
+  col[11] = Ý kiến chấp thuận của TT.HĐND tỉnh
+  col[12] = Ngày dự kiến trình ban hành
+  col[13] = Gửi lấy ý kiến góp ý (nếu có)
+  col[14] = Ngày nhận/Số vb phúc đáp
+  col[15] = Gửi Sở Tư pháp thẩm định
+  col[16] = Ngày nhận/Số vb phúc đáp
+  col[17] = Cơ quan soạn thảo trình UBND tỉnh
+  col[18] = UBND tỉnh trình HĐND tỉnh
+  col[19] = Số, trích yếu, ngày, tháng, năm ban hành VBQPPL
+  col[20] = Ghi chú
+
+HEADER ROW 2 (sub-header):
+  col[3] = Thay thế
+  col[4] = Bãi bỏ
+  col[5] = Ban hành mới
+  col[6] = Chưa xác định
+
+DATA ROW 3 (first data row):
+  col[0] = 1.0
+  col[1] = 'Nghị quyết quy định mức thu, nộp, quản lý lệ phí đăng ký cư trú và điều kiện về diện tích nhà ở tối
+  col[2] = 'Công an tỉnh'
+  col[3] = 2.0
+  col[4] = None
+  col[5] = None
+  col[6] = None
+  col[7] = 'Thảo'
+  col[8] = 'Tờ trình số 194/TTr-CAT-QLHC ngày 16/10/2025'
+  col[9] = 'Công văn số 2170/STP-XDTHPL ngày 02/10/2025'
+  col[10] = 'Tờ trình số 292/TTr-UBND ngày 03/11/2025'
+  col[11] = 'Thông báo số 313/TB-TTHĐND ngày 09/12/2025'
+  col[12] = 'Công an tỉnh đề nghị chuyển sang Kỳ họp giữa năm 2026'
+  col[13] = 'Công văn số 63/CAT-QLHC ngày 07/01/2026'
+  col[14] = None
+  col[15] = None
+  col[16] = None
+  col[17] = None
+  col[18] = None
+  col[19] = None
+  col[20] = None
+  col[21] = None
+  col[22] = None
+  col[23] = None
+  col[24] = None
+  col[25] = None
+
+DATA ROW 4:
+  col[0] = 2
+  col[1] = 'Nghị quyết hỗ trợ người nghiện, người bị quản lý sau cai nghiện và hỗ trợ chính sách cho lực lượng 
+  col[2] = 'Công an tỉnh'
+  col[3] = 4.0
+  col[4] = None
+  col[5] = None
+  col[6] = None
+  col[7] = 'Thảo'
+  col[8] = 'Công văn số 331/CAT-PC04 ngày 24/01/2026.'
+  col[9] = None
+  col[10] = None
+  col[11] = None
+  col[12] = None
+  col[13] = None
+  col[14] = None
+  col[15] = None
+  col[16] = None
+  col[17] = None
+  col[18] = None
+  col[19] = None
+  col[20] = None
+  col[21] = None
+  col[22] = None
+  col[23] = None
+  col[24] = None
+  col[25] = None
+
+DATA ROW 5:
+  col[0] = 3
+  col[1] = 'Nghị quyết xác định chiều sâu vành đai biên giới và xác lập vùng cấm trong khu vực biên giới đất li
+  col[2] = 'Bộ Chỉ huy Quân sự tỉnh'
+  col[3] = 2.0
+  col[4] = None
+  col[5] = None
+  col[6] = None
+  col[7] = 'Thảo'
+  col[8] = 'Công văn số 293/BCHBP-TM ngày 28/01/2026'
+  col[9] = None
+  col[10] = None
+  col[11] = None
+  col[12] = ' Kỳ họp chuyên đề tháng 5/2026'
+  col[13] = None
+  col[14] = None
+  col[15] = None
+  col[16] = None
+  col[17] = None
+  col[18] = None
+  col[19] = None
+  col[20] = None
+  col[21] = None
+  col[22] = None
+  col[23] = None
+  col[24] = None
+  col[25] = None
+
+DATA ROW 6:
+  col[0] = 4
+  col[1] = 'Nghị quyết quy định tiêu chí thành lập Đội dân phòng; số lượng thành viên và mức hỗ trợ, bồi dưỡng 
+  col[2] = 'Công an tỉnh'
+  col[3] = None
+  col[4] = None
+  col[5] = 1.0
+  col[6] = None
+  col[7] = 'Thảo'
+  col[8] = 'Công văn số 609/CAT-PC07 ngày 09/02/2026'
+  col[9] = None
+  col[10] = None
+  col[11] = None
+  col[12] = ' Kỳ họp chuyên đề tháng 4/2026'
+  col[13] = None
+  col[14] = None
+  col[15] = None
+  col[16] = None
+  col[17] = None
+  col[18] = None
+  col[19] = None
+  col[20] = None
+  col[21] = None
+  col[22] = None
+  col[23] = None
+  col[24] = None
+  col[25] = None

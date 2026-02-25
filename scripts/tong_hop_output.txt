@@ -1,0 +1,81 @@
+Rows: 85, Cols: 26
+
+Merged cells: [<MergedCellRange B4:F4>, <MergedCellRange A7:I7>, <MergedCellRange C29:C30>, <MergedCellRange A45:B45>, <MergedCellRange A1:B1>, <MergedCellRange B29:B30>, <MergedCellRange C9:C10>, <MergedCellRange C1:G1>, <MergedCellRange G29:G30>, <MergedCellRange B9:B10>, <MergedCellRange A2:B2>, <MergedCellRange F9:F10>, <MergedCellRange C2:G2>, <MergedCellRange A29:A30>, <MergedCellRange D9:E9>, <MergedCellRange F29:F30>, <MergedCellRange G9:G10>, <MergedCellRange A27:G27>, <MergedCellRange A9:A10>, <MergedCellRange D29:E29>]
+
+R1: C1=SỞ TƯ PHÁP TỈNH AN GIANG | C3=CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+R2: C1=PHÒNG XDTHPL | C3=Độc lập - Tự do - Hạnh phúc
+R4: C2=BÁO CÁO VÀ PHƯƠNG HƯỚNG 
+Xử lý các Nghị quyết, Quyết định do HĐND, UBND tỉnh An Giang, tỉnh Kiên Giang ban hành trước ngày 01/7/2025
+R7: C1=1. Đối với 243 Nghị quyết của Hội đồng nhân dân tỉnh
+R9: C1=TT | C2=Lĩnh vực | C3=Số văn bản còn phải xử lý (theo DS theo dõi hiện nay) | C4=Số văn bản 
+đã xử lý | C6=Chuyên viên 
+phụ trách và cơ quan phối hợp | C7=Ghi 
+chú
+R10: C4=Bãi bỏ/Không xử lý | C5=Ban hành 
+mới, thay thế
+R11: C1=01 | C2=Lĩnh vực an ninh chính trị, trật tự 
+an toàn xã hội. | C3=8.0 | C4=0.0 | C5=4.0 | C6=- Công an tỉnh, Bộ Chỉ huy quân sự tỉnh, Sở Nội vụ.
+- Thảo.
+R12: C1=02 | C2=Lĩnh vực tư pháp. | C3=2.0 | C4=0.0 | C5=0.0 | C6=- Sở Tư pháp, Sở Nông nghiệp và Môi trường.
+- Nhung, Trâm.
+R13: C1=03 | C2=Lĩnh vực y tế. | C3=11.0 | C4=0.0 | C5=5.0 | C6=- Sở Y tế.
+- Nhung.
+R14: C1=04 | C2=Lĩnh vực xây dựng. | C3=7.0 | C4=1.0 | C5=0.0 | C6=- Sở Xây dựng.
+- Đỗ Hằng.
+R15: C1=05 | C2=Lĩnh vực nông nghiệp và môi trường. | C3=71.0 | C4=1.0 | C5=1.0 | C6=- Sở Nông nghiệp và Môi trường.
+- Trâm.
+R16: C1=06 | C2=Lĩnh vực tài chính. | C3=31.0 | C4=5.0 | C5=11.0 | C6=- Sở Tài chính.
+- Thảo.
+R17: C1=07 | C2=Lĩnh vực nội vụ. | C3=9.0 | C4=2.0 | C5=4.0 | C6=- Sở Nội vụ.
+- Nhung.
+R18: C1=08 | C2=Lĩnh vực công thương. | C3=3.0 | C4=0.0 | C5=0.0 | C6=- Sở Công Thương.
+- Đỗ Hằng.
+R19: C1=09 | C2=Lĩnh vực dân tộc và tôn giáo. | C3=5.0 | C4=0.0 | C5=1.0 | C6=- Sở Dân tộc và Tôn giáo.
+- Loan.
+R20: C1=10 | C2=Lĩnh vực văn hóa, thể thao và du lịch. | C3=17.0 | C4=18.0 | C5=0.0 | C6=- Sở Văn hóa và Thể thao; Sở Du lịch.
+- Loan. | C7=Có 18 Nghị quyết về đặt tên đường đề xuất giữ nguyên, không xử lý
+R21: C1=11 | C2=Lĩnh vực giáo dục và đào tạo. | C3=11.0 | C4=2.0 | C5=1.0 | C6=- Sở Giáo dục và Đào tạo.
+- Loan. | C7=Có 02 Nghị quyết không xử lý do đã bị bãi bỏ năm 2019.
+R22: C1=12 | C2=Lĩnh vực pháp chế. | C3=3.0 | C4=0.0 | C5=0.0 | C6=- Các Ban thuộc HĐND tỉnh.
+- Thảo.
+R23: C1=13 | C2=Lĩnh vực thanh tra. | C3=1.0 | C4=0.0 | C5=0.0 | C6=- Thanh tra tỉnh.
+- Nhung.
+R24: C1=14 | C2=Lĩnh vực khoa học và công nghệ. | C3=8.0 | C4=0.0 | C5=0.0 | C6=- Sở Khoa học và Công nghệ.
+- Trâm.
+R25: C2=Tổng cộng | C3=187 | C4=29 | C5=27
+R27: C1=2. Đối với 322 Quyết định của Ủy ban nhân dân tỉnh
+R29: C1=TT | C2=Lĩnh vực | C3=Số văn bản phải 
+xử lý | C4=Số văn bản 
+đã xử lý | C6=Chuyên viên phụ trách 
+và cơ quan phối hợp | C7=Ghi chú
+R30: C4=Bãi 
+bỏ/Không xử lý | C5=Ban hành 
+mới, thay thế
+R31: C1=01 | C2=Lĩnh vực Văn phòng UBND tỉnh | C3=6.0 | C5=2.0 | C6=- Thảo.
+- Văn phòng UBND tỉnh.
+R32: C1=02 | C2=Lĩnh vực nội vụ | C3=20.0 | C4=4.0 | C5=3.0 | C6=- Nhung.
+- Sở Nội vụ.
+R33: C1=03 | C2=Lĩnh vực tư pháp | C3=9.0 | C6=Nhung - Sở Tư pháp
+R34: C1=04 | C2=Lĩnh vực tài chính | C3=24.0 | C4=2.0 | C5=7.0 | C6=Thảo
+R35: C1=05 | C2=Lĩnh vực văn hóa, thể thao | C3=26.0 | C4=18.0 | C6=Loan | C7=18 QĐ về đặt tên đường đề xuất không xử lý
+R36: C1=06 | C2=Lĩnh vực du lịch | C3=5.0 | C6=- Loan.
+- Sở Du lịch.
+R37: C1=07 | C2=Lĩnh vực y tế | C3=3.0 | C6=- Nhung.
+- Sở Y tế.
+R38: C1=08 | C2=Lĩnh vực công thương | C3=11.0 | C4=1.0 | C6=- Thanh Hằng.
+- Sở Công Thương.
+R39: C1=09 | C2=Lĩnh vực an ninh chính trị, trật tự 
+an toàn xã hội | C3=8.0 | C6=- Thảo.
+- Công an tỉnh (06).
+- Bộ Chỉ huy quân sự tỉnh (02).
+R40: C1=10 | C2=Lĩnh vực giáo dục và đào tạo | C3=9.0 | C4=3.0 | C6=- Loan.
+- Sở Giáo dục và Đào tạo. | C7=03 QĐ thành lập trường đề xuất không xử lý
+R41: C1=11 | C2=Lĩnh vực xây dựng | C3=52.0 | C5=1.0 | C6=- Thanh Hằng.
+- Sở Xây dựng.
+R42: C1=12 | C2=Lĩnh vực khoa học và công nghệ | C3=18.0 | C6=- Trâm.
+- Sở Khoa học và Công nghệ.
+R43: C1=13 | C2=Lĩnh vực nông nghiệp và môi trường | C3=78.0 | C5=6.0 | C6=- Trâm.
+- Sở Nông nghiệp và Môi trường
+R44: C1=14.0 | C2=Ban Quản lý Khu kinh tế tỉnh | C3=2.0 | C6=- Thanh Hằng.
+- Ban Quản lý Khu kinh tế.
+R45: C1=Tổng cộng | C3=271 | C4=28 | C5=19

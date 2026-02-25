@@ -1,0 +1,137 @@
+Sheets: ['Tong Hop Chung', 'NQ can xu ly', 'QD UBND can xu ly', 'QD CT.UBND', 'NQ HDND da xu ly', 'QD UBND da xu ly']
+
+=== Sheet: NQ can xu ly (rows=996, cols=26) ===
+  R1: C1=STT | C2=Tên gọi văn bản | C3=Cơ quan soạn thảo | C4=Hình thức xử lý | C8=Người xử lý | C9=Văn bản đăng ký xây dựng NQ của cơ quan soạn thảo | C10=Ngày nhận/Số vb phúc đáp | C11=Văn bản đăng ký xây dựng NQ của UBND tỉnh | C12=Ý kiến chấp thuận của TT.HĐND tỉnh | C13=Ngày dự kiến trình ban hành | C14=Gửi lấy ý kiến góp ý (nếu có) | C15=Ngày nhận/Số vb phúc đáp | C16=Gửi Sở Tư pháp thẩm định | C17=Ngày nhận/Số vb phúc đáp | C18=Cơ quan soạn thảo trình UBND tỉnh | C19=UBND tỉnh trình HĐND tỉnh
+  R2: C4=Thay thế | C5=Bãi bỏ | C6=Ban hành mới | C7=Chưa xác định
+  R3: C1=1.0 | C2=Nghị quyết quy định mức thu, nộp, quản lý lệ phí đăng ký cư trú và điều kiện về diện tích nhà ở tối thiểu để đăng ký thường trú tại chỗ ở hợp pháp do thuê, mượn, ở nhờ trên địa bàn tỉnh An Giang (thay thế Nghị quyết số 19/2022/NQ-HĐND ngày 07/12/2022 và Nghị quyết số 15/2023/NQ-HĐND ngày 13/7/2023 của Hội đồng nhân dân tỉnh An Giang)  | C3=Công an tỉnh | C4=2.0 | C8=Thảo | C9=Tờ trình số 194/TTr-CAT-QLHC ngày 16/10/2025 | C10=Công văn số 2170/STP-XDTHPL ngày 02/10/2025 | C11=Tờ trình số 292/TTr-UBND ngày 03/11/2025 | C12=Thông báo số 313/TB-TTHĐND ngày 09/12/2025 | C13=Công an tỉnh đề nghị chuyển sang Kỳ họp giữa năm 2026 | C14=Công văn số 63/CAT-QLHC ngày 07/01/2026
+  R4: C1=2 | C2=Nghị quyết hỗ trợ người nghiện, người bị quản lý sau cai nghiện và hỗ trợ chính sách cho lực lượng chuyên trách phòng, chống tội phạm về ma túy (thay thế Nghị quyết số 13/2023/NQ-HĐND ngày 13/7/2023 của Hội đồng nhân dân tỉnh An Giang; Nghị quyết số 23/2023/NQ-HĐND ngày 14/11/2023 của Hội đồng nhân dân tỉnh An Giang (chưa có trong danh mục áp dụng từ ngày 01/7/2025); Nghị quyết số 11/2023/NQ-HĐND ngày 14/7/2023 của Hội đồng nhân dân tỉnh Kiên Giang; Nghị quyết số 26/2023/NQ-HĐND ngày 28/12/2023 của Hội đồng nhân dân tỉnh Kiên Giang). | C3=Công an tỉnh | C4=4.0 | C8=Thảo | C9=Công văn số 331/CAT-PC04 ngày 24/01/2026.
+  R5: C1=3 | C2=Nghị quyết xác định chiều sâu vành đai biên giới và xác lập vùng cấm trong khu vực biên giới đất liền tỉnh An Giang (thay thế Nghị quyết số 20/2018/NQ-HĐND ngày 19/7/2018 của Hội đồng nhân dân tỉnh An Giang xác định chiều sâu vành đai biên giới và xác lập vùng cấm trong khu vực biên giới tỉnh An Giang; Nghị quyết số 209/2019/NQ-HĐND ngày 22/4/2019 của Hội đồng nhân dân tỉnh Kiên Giang xác định phạm vi vành đai biên giới trong khu vực biển giới đất liền tỉnh Kiên Giang). | C3=Bộ Chỉ huy Quân sự tỉnh | C4=2.0 | C8=Thảo | C9=Công văn số 293/BCHBP-TM ngày 28/01/2026 | C13= Kỳ họp chuyên đề tháng 5/2026
+  R6: C1=4 | C2=Nghị quyết quy định tiêu chí thành lập Đội dân phòng; số lượng thành viên và mức hỗ trợ, bồi dưỡng đối với đội viên Đội dân phòng trên địa bàn tỉnh An Giang | C3=Công an tỉnh | C6=1.0 | C8=Thảo | C9=Công văn số 609/CAT-PC07 ngày 09/02/2026 | C13= Kỳ họp chuyên đề tháng 4/2026
+  R7: C1=5 | C2=Nghị quyết quy định mức chi phí quản lý thực hiện Pháp lệnh ưu đãi người có công với cách mạng do Ngân sách Trung ương đảm bảo và thực hiện trên địa bàn tỉnh An Giang. | C3=Sở Nội vụ | C6=1.0 | C8=Nhung | C9=Công văn số 715/SNV-KHTC ngày 02/02/2026 | C13=Đăng ký Quý II/2026
+
+=== Sheet: QD UBND can xu ly (rows=991, cols=26) ===
+  R1: C1=STT | C2=TÊN GỌI VĂN BẢN | C3=Cơ quan soạn thảo | C4=Hình thức xử lý | C8=Người xử lý | C9=VB đăng ký xây dựng | C10=Ngày nhận/Số vb phúc đáp | C11=Chấp thuận của UBND tỉnh | C12=Ngày dự kiến trình ban hành | C13=VB lấy ý kiến góp ý (nếu có) | C14=Ngày nhận/Số vb phúc đáp | C15=VB gửi Sở Tư pháp thẩm định | C16=Ngày nhận/Số vb phúc đáp | C17=VB trình UBND tỉnh ban hành | C18=Số, ngày, tháng năm ban hành VBQPPL | C19=Ghi chú
+  R2: C4=Thay thế | C5=Bãi bỏ | C6=Ban hành mới | C7=Chưa xác định
+  R3: C1=1.0 | C2=Quyết định ban hành Quy định về công tác thi đua, khen thưởng trên địa bàn tỉnh An Giang (thay thế Quyết định số 29/2024/QĐ-UBND ngày 04/11/2024 của Ủy ban nhân dân tỉnh Kiên Giang ban hành Quy định về công tác thi đua, khen thưởng trên địa bàn tỉnh Kiên Giang). | C3=Sở Nội vụ | C4=1.0 | C8=Nhung | C9=Công văn số 578/SNV-TĐKT ngày 27/01/2026
+ | C10=Công văn số 484/STP-XDTHPL ngày 23/01/2026. | C11=Công văn số 2185/VP-NC ngày 05/02/2026 | C12=Quý I/2026
+  R4: C1=2 | C2=Quyết định số 11/2021/QĐ-UBND ngày 16/3/2021 của Ủy ban nhân dân tỉnh An Giang ban hành định mức kinh tế - kỹ thuật về sản xuất chương trình truyền hình tỉnh An Giang | C3=Sở Văn hóa và Thể thao | C7=1.0 | C8=Loan
+  R5: C1=3 | C2=Chỉ thị số 07/2012/CT-UBND ngày 04/6/2012 của Ủy ban nhân dân tỉnh An Giang về việc đẩy mạnh công tác gia đình | C3=Sở Văn hóa và Thể thao | C7=1.0 | C8=Loan
+  R6: C1=4 | C2=Quyết định 19/2020/QĐ-UBND ngày 05/5/2020 của Ủy ban nhân dân tỉnh An Giang ban hành Quy định việc công nhận các danh hiệu văn hóa trong phong trào “Toàn dân đoàn kết xây đựng đối với đời sống văn hóa” tỉnh An Giang | C3=Sở Văn hóa và Thể thao | C7=1.0 | C8=Loan
+  R7: C1=5 | C2=Quyết định số 42/2021/QĐ-UBND ngày 09/01/2021 của Ủy ban nhân dân tỉnh An Giang sửa đổi, bổ sung một số điều của Quy định việc công nhận các danh hiệu văn hóa trong Phong trào “Toàn dân đoàn kết xây dựng đời sống văn hóa” tỉnh An Giang ban hành kèm theo Quyết định số 19/2020/QĐ-UBND | C3=Sở Văn hóa và Thể thao | C7=1.0 | C8=Loan
+
+=== Sheet: NQ HDND da xu ly (rows=1000, cols=26) ===
+  R1: C1=STT | C2=Tên gọi văn bản | C3=Cơ quan soạn thảo | C4=Hình thức xử lý | C9=Người xử lý | C10=Văn bản đăng ký xây dựng NQ của cơ quan soạn thảo | C11=Ngày nhận/Số vb phúc đáp | C12=Văn bản đăng ký xây dựng NQ của UBND tỉnh | C13=Ý kiến chấp thuận của TT.HĐND tỉnh | C14=Ngày dự kiến trình ban hành | C15=Gửi lấy ý kiến góp ý (nếu có) | C16=Ngày nhận/Số vb phúc đáp | C17=Gửi Sở Tư pháp thẩm định | C18=Ngày nhận/Số vb phúc đáp | C19=Cơ quan soạn thảo trình UBND tỉnh
+  R2: C4=Thay thế | C5=Bãi bỏ | C6=Ban hành mới | C7=Hết hiệu lực theo thời gian | C8=Giữ nguyên, không xử lý
+  R3: C1=1.0 | C2=Nghị quyết số 02/2021/NQ-HĐND ngày 06 tháng 10 năm 2021 của Hội đồng nhân dân tỉnh Kiên Giang quy định mức phụ cấp hằng tháng đối với ấp (khu) đội trưởng và mức trợ cấp ngày công lao động đối với lực lượng Dân quân tự vệ trên địa bàn tỉnh Kiên Giang. | C3=Bộ Chỉ huy Quân sự tỉnh | C4=1.0 | C9=Thảo
+  R4: C1=2 | C2=Nghị quyết số 08/2024/NQ-HĐND ngày 18/7/2024 của Hội đồng nhân dân tỉnh An Giang quy định tiêu chí thành lập và tiêu chí về số lượng thành viên Tổ bảo vệ an ninh, trật tự ở cơ sở trên địa bàn tỉnh An Giang | C3=Công an tỉnh | C4=1.0 | C9=Thảo
+  R5: C1=3 | C2=Nghị quyết số 09/2024/NQ-HĐND ngày 18/7/2024 của Hội đồng nhân dân tỉnh An Giang quy định mức hỗ trợ, bồi dưỡng đối với người tham gia lực lượng bảo vệ an ninh, trật tự ở cơ sở trên địa bàn tỉnh An Giang | C3=Công an tỉnh | C4=1.0 | C9=Thảo
+  R6: C1=4 | C2=Nghị quyết số 08/2024/NQ-HĐND ngày 26/6/2024 của Hội đồng nhân dân tỉnh Kiên Giang quy định tiêu chí thành lập, tiêu chí về số lượng thành viên Tổ bảo vệ an ninh, trật tự; mức chi và mức hỗ trợ, bồi dưỡng cho lực lượng tham gia bảo vệ an ninh, trật tự ở cơ sở trên địa bàn tỉnh Kiên Giang | C3=Công an tỉnh | C4=1.0 | C9=Thảo
+  R7: C1=5 | C2=Nghị quyết số 25/2024/NQ-HĐND ngày 27/12/2024 của Hội đồng nhân dân tỉnh An Giang quy định đối tượng, mức trợ cấp và hỗ trợ thăm chúc tết Nguyên đán hằng năm của tỉnh An Giang | C3=Sở Nội vụ | C4=1.0 | C9=Thanh Hằng
+
+=== Sheet: QD UBND da xu ly (rows=1004, cols=26) ===
+  R1: C1=STT | C2=TÊN GỌI VĂN BẢN | C3=Cơ quan soạn thảo | C4=Hình thức xử lý | C9=Người xử lý | C10=VB đăng ký xây dựng | C11=Ngày nhận/Số vb phúc đáp | C12=Chấp thuận của UBND tỉnh | C13=Ngày dự kiến trình ban hành | C14=VB lấy ý kiến góp ý (nếu có) | C15=Ngày nhận/Số vb phúc đáp | C16=VB gửi Sở Tư pháp thẩm định | C17=Ngày nhận/Số vb phúc đáp | C18=VB trình UBND tỉnh ban hành | C19=Số, ngày, tháng năm ban hành VBQPPL
+  R2: C4=Thay thế | C5=Bãi bỏ | C6=Ban hành mới | C7=Hết hiệu lực theo thời gian | C8=Giữ nguyên không xử lý
+  R3: C1=1.0 | C2=Quyết định sửa đổi, bổ sung một số điều của Quyết định số 18/2025/QĐ-UBND quy định đơn giá bồi thường cây trồng, vật nuôi khi Nhà nước thu hồi đất trên địa bàn tỉnh An Giang. | C3=Sở Nông nghiệp và Môi trường | C6=1.0 | C9=Trâm | C12=Quyết định số 25/QĐ-UBND ngày 06/01/2026 của Chủ tịch UBND tỉnh | C13=Tháng 01/2026 | C19=Quyết định số 03/2026/QĐ-UBND ngày 22/01/2026 của UBND tỉnh An Giang Sửa đổi, bổ sung một số điều của Quyết định số 18/2025/QĐ-UBND quy định đơn giá bồi thường cây trồng, vật nuôi khi Nhà nước thu hồi đất trên địa bàn tỉnh An Giang
+  R4: C1=2 | C2=Quyết định ban hành Quy định bồi thường, hỗ trợ và tái định cư trên địa bàn tỉnh An Giang thực hiện Nghị quyết của Quốc hội quy định một số chính sách tháo gỡ khó khăn, vướng mắc trong tổ chức thi hành Luật Đất đai. | C3=Sở Nông nghiệp và Môi trường | C6=1.0 | C9=Trâm | C12=Quyết định số 25/QĐ-UBND ngày 06/01/2026 của Chủ tịch UBND tỉnh | C13=Tháng 01/2026 | C19=Quyết định số 07/2026/QĐ-UBND ngày 12/02/2026 của UBND tỉnh An Giang quy định về bồi thường, hỗ trợ, tái định cư trên địa bàn tỉnh An Giang thực hiện Nghị quyết của Quốc hội quy định một số chính sách tháo gỡ khó khăn, vướng mắc trong tổ chức thi hành Luật Đất đai.
+  R5: C1=3 | C2=Quyết định số 48/2020/QĐ-UBND ngày 29/10/2020 của Ủy ban nhân dân tỉnh An Giang ban hành quy định về mật độ chăn nuôi trên địa bàn tỉnh An Giang. | C3=Sở Nông nghiệp và Môi trường | C4=1.0 | C9=Trâm | C12=Công văn số 6169/VP-KT ngày 17 tháng 10 năm 2025 | C14=Công văn số 3991/SNNMT-CCCNTY ngày 24/10/2025 | C15=- Công văn số 5856/SNNMT-CCCNTY ngày 11/12/2025. | C16=Báo cáo số 4373/BC-STP ngày 31/12/2025 | C19=Quyết định số 08/2026/QĐ-UBND ngày 12/02/2026 của UBND tỉnh An Giang quy định mật độ chăn nuôi trên địa bàn tỉnh An Giang.
+  R6: C1=4 | C2=Quyết định số 27/2020/QĐ-UBND ngày 24/12/2020 của Ủy ban nhân dân tỉnh Kiên Giang Quyết định về việc quy định mật độ chăn nuôi trên địa bàn tỉnh Kiên Giang đến năm 2030 | C3=Sở Nông nghiệp và Môi trường | C4=1.0 | C9=Trâm | C12=Công văn số 6169/VP-KT ngày 17 tháng 10 năm 2025 | C14=Công văn số 3991/SNNMT-CCCNTY ngày 24/10/2025 | C15=- Công văn số 5856/SNNMT-CCCNTY ngày 11/12/2025. | C16=Báo cáo số 4373/BC-STP ngày 31/12/2025 | C19=Quyết định số 08/2026/QĐ-UBND ngày 12/02/2026 của UBND tỉnh An Giang quy định mật độ chăn nuôi trên địa bàn tỉnh An Giang.
+  R7: C1=5 | C2=Quyết định ban hành Quy chế quản lý công trình ghi công liệt sĩ, mộ liệt sĩ trên địa bàn tỉnh An Giang. | C3=Sở Nội vụ | C6=1.0 | C9=Nhung | C12=Công văn số 8644/VP-NC ngày 26/11/2025 | C13=Tháng 12/2025 | C19=Quyết định số 05/2026/QĐ-UBND ngày 02/02/2026 của UBND tỉnh An Giang Ban hành Quy chế quản lý công trình ghi công liệt sĩ, mộ liệt sĩ trên địa bàn tỉnh An Giang.
+
+NQ can xu ly ALL headers:
+  Col 0: 'STT'
+  Col 1: 'Tên gọi văn bản'
+  Col 2: 'Cơ quan soạn thảo'
+  Col 3: 'Hình thức xử lý'
+  Col 4: ''
+  Col 5: ''
+  Col 6: ''
+  Col 7: 'Người xử lý'
+  Col 8: 'Văn bản đăng ký xây dựng NQ của cơ quan soạn thảo'
+  Col 9: 'Ngày nhận/Số vb phúc đáp'
+  Col 10: 'Văn bản đăng ký xây dựng NQ của UBND tỉnh'
+  Col 11: 'Ý kiến chấp thuận của TT.HĐND tỉnh'
+  Col 12: 'Ngày dự kiến trình ban hành'
+  Col 13: 'Gửi lấy ý kiến góp ý (nếu có)'
+  Col 14: 'Ngày nhận/Số vb phúc đáp'
+  Col 15: 'Gửi Sở Tư pháp thẩm định'
+  Col 16: 'Ngày nhận/Số vb phúc đáp'
+  Col 17: 'Cơ quan soạn thảo trình UBND tỉnh'
+  Col 18: 'UBND tỉnh trình HĐND tỉnh'
+  Col 19: 'Số, trích yếu, ngày, tháng, năm ban hành VBQPPL'
+  Col 20: 'Ghi chú'
+  Col 21: ''
+  Col 22: ''
+  Col 23: ''
+  Col 24: ''
+  Col 25: ''
+
+
+NQ can xu ly - all agency names (col_agency):
+  - Ban của Hội đồng nhân dân tỉnh
+  - Bộ Chỉ huy Quân sự tỉnh
+  - Chi nhánh Ngân hàng chính sách xã hội tỉnh An Giang
+  - Công an tỉnh
+  - Sở Công Thương
+  - Sở Du lịch
+  - Sở Dân tộc và Tôn giáo
+  - Sở Giáo dục và Đào tạo
+  - Sở Khoa học và Công nghệ
+  - Sở Nông nghiệp và Môi trường
+  - Sở Nội vụ
+  - Sở Tài chính
+  - Sở Tư pháp
+  - Sở Văn hóa và Thể thao
+  - Sở Xây dựng
+  - Sở Y tế
+  - Thanh tra tỉnh
+
+QD UBND can xu ly ALL headers:
+  Col 0: 'STT'
+  Col 1: 'TÊN GỌI VĂN BẢN'
+  Col 2: 'Cơ quan soạn thảo'
+  Col 3: 'Hình thức xử lý'
+  Col 4: ''
+  Col 5: ''
+  Col 6: ''
+  Col 7: 'Người xử lý'
+  Col 8: 'VB đăng ký xây dựng'
+  Col 9: 'Ngày nhận/Số vb phúc đáp'
+  Col 10: 'Chấp thuận của UBND tỉnh'
+  Col 11: 'Ngày dự kiến trình ban hành'
+  Col 12: 'VB lấy ý kiến góp ý (nếu có)'
+  Col 13: 'Ngày nhận/Số vb phúc đáp'
+  Col 14: 'VB gửi Sở Tư pháp thẩm định'
+  Col 15: 'Ngày nhận/Số vb phúc đáp'
+  Col 16: 'VB trình UBND tỉnh ban hành'
+  Col 17: 'Số, ngày, tháng năm ban hành VBQPPL'
+  Col 18: 'Ghi chú'
+  Col 19: ''
+  Col 20: ''
+  Col 21: ''
+  Col 22: ''
+  Col 23: ''
+  Col 24: ''
+  Col 25: ''
+
+QD UBND can xu ly - all agency names:
+  - Ban Quản lý Khu kinh tế
+  - Bộ Chỉ huy Quân sự tỉnh
+  - Chưa xác định/Sở NNMT
+  - Công an tỉnh
+  - Loan
+  - Nhung
+  - Sở Công Thương
+  - Sở Du lịch
+  - Sở Giáo dục và Đào tạo
+  - Sở Khoa học và Công nghệ
+  - Sở Nông nghiệp và Môi trường
+  - Sở Nội vụ
+  - Sở Tài chính
+  - Sở Tư pháp
+  - Sở Văn hóa và Thể thao
+  - Sở Xây dựng
+  - Sở Y tế
+  - Thanh Hằng
+  - Thảo
+  - Trâm
+  - Văn phòng UBND tỉnh
