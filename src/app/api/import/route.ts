@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import * as XLSX from 'xlsx'
 
-export const runtime = 'edge'
 
 // Server-side: dùng service_role key để bypass RLS
 const supabaseAdmin = createClient(

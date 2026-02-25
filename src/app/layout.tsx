@@ -13,8 +13,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="vi">
-      <body className={`${geist.className} antialiased`}>
+    <html lang="vi" suppressHydrationWarning>
+      <body className={`${geist.className} antialiased`} suppressHydrationWarning>
         {children}
       </body>
     </html>
