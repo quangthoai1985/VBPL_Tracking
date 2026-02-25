@@ -272,13 +272,21 @@ export default function DocumentsPage({ docType, status, title, description }: P
             const handlers: Record<string, number> = {}
 
             resStats.data.forEach(d => {
-                thayThe += (d.count_thay_the || 0)
-                baiBo += (d.count_bai_bo || 0)
-                banHanhMoi += (d.count_ban_hanh_moi || 0)
-                chuaXacDinh += (d.count_chua_xac_dinh || 0)
+                const tt = d.count_thay_the || 0
+                const bb = d.count_bai_bo || 0
+                const bhm = d.count_ban_hanh_moi || 0
+                const cxd = d.count_chua_xac_dinh || 0
+
+                thayThe += tt
+                baiBo += bb
+                banHanhMoi += bhm
+                chuaXacDinh += cxd
 
                 const h = d.handler_name || 'Chưa phân công'
-                handlers[h] = (handlers[h] || 0) + 1
+                const totalForThisDoc = tt + bb + bhm + cxd
+
+                // Cộng dồn TỔNG SỐ LƯỢNG văn bản thực tế mà người này gánh, thay vì chỉ đếm số lượng nhóm biên chế
+                handlers[h] = (handlers[h] || 0) + (totalForThisDoc > 0 ? totalForThisDoc : 1)
             })
 
             setStats({ thayThe, baiBo, banHanhMoi, chuaXacDinh, handlers })
