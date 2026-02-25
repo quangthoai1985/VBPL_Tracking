@@ -8,8 +8,6 @@ export type ProcessingForm =
     | 'bai_bo'
     | 'ban_hanh_moi'
     | 'chua_xac_dinh'
-    | 'het_hieu_luc'
-    | 'giu_nguyen'
 export type UserRole = 'admin' | 'chuyen_vien' | 'co_quan' | 'guest'
 
 export interface Agency {
@@ -43,8 +41,7 @@ export interface Document {
     count_bai_bo: number
     count_ban_hanh_moi: number
     count_chua_xac_dinh: number
-    count_het_hieu_luc: number
-    count_giu_nguyen: number
+
     // Workflow steps
     reg_doc_agency: string | null
     reg_doc_reply: string | null
@@ -91,8 +88,7 @@ export interface SummaryStats {
     bai_bo: number
     ban_hanh_moi: number
     chua_xac_dinh: number
-    het_hieu_luc: number
-    giu_nguyen: number
+
 }
 
 export interface HandlerStats {
@@ -128,8 +124,7 @@ export const PROCESSING_FORM_LABELS: Record<ProcessingForm, string> = {
     bai_bo: 'Bãi bỏ',
     ban_hanh_moi: 'Ban hành mới',
     chua_xac_dinh: 'Chưa xác định',
-    het_hieu_luc: 'Hết hiệu lực',
-    giu_nguyen: 'Giữ nguyên',
+
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {
@@ -147,6 +142,4 @@ export const PROCESSING_FORM_COLORS: Record<ProcessingForm, string> = {
     bai_bo: 'bg-red-100 text-red-800',
     ban_hanh_moi: 'bg-green-100 text-green-800',
     chua_xac_dinh: 'bg-yellow-100 text-yellow-800',
-    het_hieu_luc: 'bg-gray-100 text-gray-800',
-    giu_nguyen: 'bg-purple-100 text-purple-800',
 }

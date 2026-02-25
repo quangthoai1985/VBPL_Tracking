@@ -125,11 +125,7 @@ function ProcessingFormBadges({ doc, docType }: { doc: Document; docType: DocTyp
     if (docType !== 'QD_CT_UBND') {
         all.push({ key: 'count_chua_xac_dinh', label: 'Chưa XĐ', color: 'bg-yellow-100 text-yellow-800', count: doc.count_chua_xac_dinh })
     }
-    // Thêm "Hết hiệu lực" và "Giữ nguyên" cho các sheet đã xử lý
-    all.push(
-        { key: 'count_het_hieu_luc', label: 'Hết HL', color: 'bg-gray-100 text-gray-700', count: doc.count_het_hieu_luc },
-        { key: 'count_giu_nguyen', label: 'Giữ nguyên', color: 'bg-purple-100 text-purple-800', count: doc.count_giu_nguyen },
-    )
+
 
     const badges = all.filter(b => b.count > 0)
     if (badges.length === 0) return <span className="text-slate-300">—</span>

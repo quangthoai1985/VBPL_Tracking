@@ -29,8 +29,7 @@ const COUNT_FIELDS: FieldDef[] = [
     { key: 'count_bai_bo', label: 'Bãi bỏ', type: 'number', placeholder: '0' },
     { key: 'count_ban_hanh_moi', label: 'Ban hành mới', type: 'number', placeholder: '0' },
     { key: 'count_chua_xac_dinh', label: 'Chưa xác định', type: 'number', placeholder: '0' },
-    { key: 'count_het_hieu_luc', label: 'Hết hiệu lực', type: 'number', placeholder: '0' },
-    { key: 'count_giu_nguyen', label: 'Giữ nguyên', type: 'number', placeholder: '0' },
+
 ]
 
 // Workflow fields cho NQ
@@ -92,7 +91,7 @@ const DOC_TYPE_NAMES: Record<DocType, string> = {
 const EDITABLE_KEYS = [
     'stt', 'name', 'agency_id', 'handler_name',
     'count_thay_the', 'count_bai_bo', 'count_ban_hanh_moi',
-    'count_chua_xac_dinh', 'count_het_hieu_luc', 'count_giu_nguyen',
+    'count_chua_xac_dinh',
     'reg_doc_agency', 'reg_doc_reply', 'reg_doc_ubnd', 'approval_hdnd',
     'expected_date', 'feedback_sent', 'feedback_reply',
     'appraisal_sent', 'appraisal_reply',
