@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import * as XLSX from 'xlsx'
-import path from 'path'
-import { existsSync, readFileSync } from 'fs'
+
+export const runtime = 'edge'
 
 // Server-side: dùng service_role key để bypass RLS
 const supabaseAdmin = createClient(
@@ -38,36 +38,27 @@ function findCol(headers: string[], ...keywords: string[]): number {
     )
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
     const logs: string[] = []
 
     try {
         logs.push('⏳ Đang kết nối Supabase...')
 
-        // Tìm file Excel
-        const fileName = '2026-Theo Doi Tien Do Ban Hanh VBQPPL.xlsx'
-        const possiblePaths = [
-            path.join(process.cwd(), 'Docs', fileName),
-            path.join(process.cwd(), 'public', fileName),
-            path.join('E:\\WEB\\VBPL Tracking', 'Docs', fileName),
-        ]
-        const excelPath = possiblePaths.find(p => existsSync(p))
+        // Nhận file từ FormData (upload từ client)
+        const formData = await request.formData()
+        const file = formData.get('file') as File | null
 
-        if (!excelPath) {
+        if (!file) {
             return NextResponse.json({
-                logs: [
-                    ...logs,
-                    `❌ Không tìm thấy file Excel. Đã tìm tại:`,
-                    ...possiblePaths.map(p => `   • ${p}`)
-                ],
+                logs: [...logs, '❌ Không có file Excel được upload.'],
                 error: true
             })
         }
 
-        logs.push(`✅ File Excel: ${excelPath}`)
+        logs.push(`✅ File Excel: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`)
 
-        const buffer = readFileSync(excelPath)
-        const wb = XLSX.read(buffer, { type: 'buffer' })
+        const arrayBuffer = await file.arrayBuffer()
+        const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' })
         logs.push(`📂 Sheets: ${wb.SheetNames.join(', ')}`)
 
         // Xóa dữ liệu cũ
@@ -112,16 +103,12 @@ export async function POST() {
             if (rows.length < 3) { logs.push(`⚠️ Sheet ${sheetName} trống`); continue }
 
             const h1 = (rows[0] as unknown[]).map(c => norm(c) ?? '')
-            // Row 2 là sub-header của cột Hình thức xử lý
-            // col[3]=Thay thế, col[4]=Bãi bỏ, col[5]=Ban hành mới, col[6]=Chưa xác định
 
             const ci = {
                 stt: findCol(h1, 'STT'),
                 name: findCol(h1, 'Tên gọi văn bản', 'Tên gọi', 'TÊN GỌI'),
                 agency: findCol(h1, 'Cơ quan soạn thảo', 'Cơ quan soạn'),
                 handler: findCol(h1, 'Người xử lý', 'Chuyên viên'),
-                // Cột hình thức xử lý: col[3]-[6] cố định theo cấu trúc Excel
-                // Tìm chỉ số cột "Hình thức xử lý" rồi offset 0-3
                 htxl: findCol(h1, 'Hình thức xử lý'),
                 reg_agency: findCol(h1, 'VB đăng ký xây dựng', 'đăng ký xây dựng NQ của cơ quan'),
                 reg_reply: findCol(h1, 'Ngày nhận/Số vb phúc đáp', 'phúc đáp'),
@@ -137,8 +124,6 @@ export async function POST() {
                 notes: findCol(h1, 'Ghi chú'),
             }
 
-            // Offset các cột hình thức xử lý từ cột "Hình thức xử lý"
-            // Theo cấu trúc Excel: htxl+0=Thay thế, +1=Bãi bỏ, +2=Ban hành mới, +3=Chưa xác định
             const baseHtxl = ci.htxl >= 0 ? ci.htxl : 3
 
             const gv = (row: unknown[], k: keyof typeof ci) => {
@@ -164,13 +149,11 @@ export async function POST() {
                 const agencyName = gv(row, 'agency')
                 const agencyId = agencyName ? await getOrCreateAgency(agencyName) : null
 
-                // Đọc 4 số lượng VB từ 4 sub-cột hình thức xử lý
                 const countThayThe = toInt(row[baseHtxl])
                 const countBaiBo = toInt(row[baseHtxl + 1])
                 const countBanHanhMoi = toInt(row[baseHtxl + 2])
                 const countChuaXacDinh = toInt(row[baseHtxl + 3])
 
-                // Xác định processing_form chính (nếu chỉ có 1 loại)
                 const counts = [countThayThe, countBaiBo, countBanHanhMoi, countChuaXacDinh]
                 const nonZero = counts.filter(c => c > 0)
                 let processingForm: string | null = null
@@ -178,7 +161,6 @@ export async function POST() {
                     const idx = counts.indexOf(nonZero[0])
                     processingForm = ['thay_the', 'bai_bo', 'ban_hanh_moi', 'chua_xac_dinh'][idx]
                 } else if (nonZero.length > 1) {
-                    // Nhiều hình thức → lấy cái có số lớn nhất
                     const maxIdx = counts.indexOf(Math.max(...counts))
                     processingForm = ['thay_the', 'bai_bo', 'ban_hanh_moi', 'chua_xac_dinh'][maxIdx]
                 }

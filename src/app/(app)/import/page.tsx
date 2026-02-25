@@ -1,26 +1,42 @@
 'use client'
 
-import { useState } from 'react'
-import { Upload, Terminal, CheckCircle, AlertCircle, Loader } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Upload, Terminal, CheckCircle, AlertCircle, Loader, FileSpreadsheet } from 'lucide-react'
 
 export default function ImportPage() {
     const [log, setLog] = useState<string[]>([])
     const [loading, setLoading] = useState(false)
     const [done, setDone] = useState(false)
     const [error, setError] = useState(false)
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const fileRef = useRef<HTMLInputElement>(null)
+
+    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (file) setSelectedFile(file)
+    }
 
     async function handleImport() {
+        if (!selectedFile) {
+            setLog(['❌ Vui lòng chọn file Excel trước khi import.'])
+            setError(true)
+            return
+        }
+
         if (!confirm('⚠️ Thao tác này sẽ XÓA TOÀN BỘ dữ liệu cũ và import lại. Tiếp tục?')) return
 
         setLoading(true)
         setDone(false)
         setError(false)
-        setLog(['⏳ Đang gửi yêu cầu import đến server...'])
+        setLog(['⏳ Đang gửi file Excel đến server...'])
 
         try {
+            const formData = new FormData()
+            formData.append('file', selectedFile)
+
             const res = await fetch('/api/import', {
                 method: 'POST',
-                // Không set timeout - import có thể mất vài phút cho ~1000 records/sheet
+                body: formData,
             })
 
             if (!res.ok) {
@@ -57,7 +73,7 @@ export default function ImportPage() {
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <h2 className="font-semibold text-blue-800 mb-2">📋 Thông tin Import</h2>
                 <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• File: <code className="bg-blue-100 px-1 rounded">Docs/2026-Theo Doi Tien Do Ban Hanh VBQPPL.xlsx</code></li>
+                    <li>• Chọn file <code className="bg-blue-100 px-1 rounded">.xlsx</code> từ máy tính</li>
                     <li>• Sheets: NQ cần/đã xử lý, QĐ UBND cần/đã xử lý, QĐ CT UBND</li>
                     <li>• Cơ quan soạn thảo mới sẽ được tạo tự động</li>
                     <li>• Dữ liệu cũ sẽ bị <strong>xóa trắng</strong> trước khi import lại</li>
@@ -77,18 +93,41 @@ export default function ImportPage() {
                 </div>
             </div>
 
-            {/* Buttons */}
-            <div className="flex gap-3">
-                <button
-                    onClick={handleImport}
-                    disabled={loading}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    {loading
-                        ? <><Loader className="w-5 h-5 animate-spin" /> Đang import (chờ vài phút)...</>
-                        : <><Upload className="w-5 h-5" /> Bắt đầu Import</>
-                    }
-                </button>
+            {/* File picker + Import button */}
+            <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                    <input
+                        ref={fileRef}
+                        type="file"
+                        accept=".xlsx,.xls"
+                        onChange={handleFileChange}
+                        className="hidden"
+                    />
+                    <button
+                        onClick={() => fileRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors"
+                    >
+                        <FileSpreadsheet className="w-5 h-5 text-green-600" />
+                        {selectedFile ? selectedFile.name : 'Chọn file Excel...'}
+                    </button>
+
+                    <button
+                        onClick={handleImport}
+                        disabled={loading || !selectedFile}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        {loading
+                            ? <><Loader className="w-5 h-5 animate-spin" /> Đang import...</>
+                            : <><Upload className="w-5 h-5" /> Bắt đầu Import</>
+                        }
+                    </button>
+                </div>
+
+                {selectedFile && (
+                    <p className="text-xs text-slate-400">
+                        📄 {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                    </p>
+                )}
             </div>
 
             {/* Log */}
@@ -125,20 +164,6 @@ export default function ImportPage() {
                     )}
                 </div>
             )}
-
-            {/* Hướng dẫn thủ công */}
-            <div className="bg-slate-50 rounded-xl border border-slate-100 p-5">
-                <h3 className="font-semibold text-slate-700 mb-3">🔧 Hoặc import thủ công bằng Python</h3>
-                <pre className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{`# 1. Cài đặt dependencies
-pip install openpyxl supabase python-dotenv
-
-# 2. Đảm bảo .env.local có SUPABASE_SERVICE_ROLE_KEY
-
-# 3. Chạy script
-cd E:\\WEB\\VBPL Tracking
-python scripts/import_excel.py`}
-                </pre>
-            </div>
         </div>
     )
 }
