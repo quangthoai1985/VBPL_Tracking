@@ -25,6 +25,14 @@ const PAGE_SIZE = 50
 type SortField = 'stt' | 'name' | 'handler_name' | 'updated_at' | 'expected_date'
 type SortDir = 'asc' | 'desc'
 
+interface DocStats {
+    thayThe: number
+    baiBo: number
+    banHanhMoi: number
+    chuaXacDinh: number
+    handlers: Record<string, number>
+}
+
 // ─── Định nghĩa cột sau cột "Hình thức XL" và "Người XL" ─────────────────────
 interface ColDef {
     key: keyof Document | string
@@ -149,6 +157,7 @@ function ProcessingFormBadges({ doc, docType }: { doc: Document; docType: DocTyp
 export default function DocumentsPage({ docType, status, title, description }: Props) {
     const supabase = createClient()
     const [docs, setDocs] = useState<Document[]>([])
+    const [stats, setStats] = useState<DocStats | null>(null)
     const [agencies, setAgencies] = useState<Agency[]>([])
     const [loading, setLoading] = useState(true)
     const [total, setTotal] = useState(0)
@@ -231,15 +240,50 @@ export default function DocumentsPage({ docType, status, title, description }: P
             .order(sortField, { ascending: sortDir === 'asc' })
             .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-        if (search.trim()) query = query.ilike('name', `%${search.trim()}%`)
-        if (filterHandler) query = query.eq('handler_name', filterHandler)
-        if (filterAgency) query = query.eq('agency_id', filterAgency)
+        let statsQuery = supabase
+            .from('v_documents_full')
+            .select('count_thay_the, count_bai_bo, count_ban_hanh_moi, count_chua_xac_dinh, handler_name')
+            .eq('doc_type', docType)
+            .eq('status', status)
 
-        const { data, count, error } = await query
-        if (!error) {
-            setDocs(data as Document[])
-            setTotal(count ?? 0)
+        if (search.trim()) {
+            const s = `%${search.trim()}%`
+            query = query.ilike('name', s)
+            statsQuery = statsQuery.ilike('name', s)
         }
+        if (filterHandler) {
+            query = query.eq('handler_name', filterHandler)
+            statsQuery = statsQuery.eq('handler_name', filterHandler)
+        }
+        if (filterAgency) {
+            query = query.eq('agency_id', filterAgency)
+            statsQuery = statsQuery.eq('agency_id', filterAgency)
+        }
+
+        const [resDocs, resStats] = await Promise.all([query, statsQuery])
+
+        if (!resDocs.error) {
+            setDocs(resDocs.data as Document[])
+            setTotal(resDocs.count ?? 0)
+        }
+
+        if (!resStats.error && resStats.data) {
+            let thayThe = 0, baiBo = 0, banHanhMoi = 0, chuaXacDinh = 0
+            const handlers: Record<string, number> = {}
+
+            resStats.data.forEach(d => {
+                thayThe += (d.count_thay_the || 0)
+                baiBo += (d.count_bai_bo || 0)
+                banHanhMoi += (d.count_ban_hanh_moi || 0)
+                chuaXacDinh += (d.count_chua_xac_dinh || 0)
+
+                const h = d.handler_name || 'Chưa phân công'
+                handlers[h] = (handlers[h] || 0) + 1
+            })
+
+            setStats({ thayThe, baiBo, banHanhMoi, chuaXacDinh, handlers })
+        }
+
         setLoading(false)
     }, [docType, status, search, filterHandler, filterAgency, sortField, sortDir, page])
 
@@ -337,8 +381,61 @@ export default function DocumentsPage({ docType, status, title, description }: P
                     )}
                 </div>
                 <p className="text-xs text-slate-400 mt-3">
-                    {loading ? 'Đang tải...' : `Hiển thị ${docs.length} / ${total.toLocaleString()} văn bản`}
+                    {loading ? 'Đang tải...' : `Hiển thị ${docs.length} / ${total.toLocaleString()} nhóm văn bản`}
                 </p>
+
+                {/* Bản thống kê (Stats) */}
+                {stats && (
+                    <div className="mt-4 pt-4 border-t border-slate-100 grid md:grid-cols-2 gap-6 animate-fadeIn">
+                        {/* Cột 1: Hình thức xử lý */}
+                        <div>
+                            <h3 className="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-3">
+                                Tổng số theo hình thức xử lý
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg">
+                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                    <span className="text-sm font-medium text-blue-900">Thay thế</span>
+                                    <span className="text-sm font-bold text-blue-700 ml-1">{stats.thayThe}</span>
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-100 rounded-lg">
+                                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                    <span className="text-sm font-medium text-red-900">Bãi bỏ</span>
+                                    <span className="text-sm font-bold text-red-700 ml-1">{stats.baiBo}</span>
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-100 rounded-lg">
+                                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                    <span className="text-sm font-medium text-green-900">Ban hành mới</span>
+                                    <span className="text-sm font-bold text-green-700 ml-1">{stats.banHanhMoi}</span>
+                                </div>
+                                {docType !== 'QD_CT_UBND' && (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 border border-yellow-100 rounded-lg">
+                                        <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                                        <span className="text-sm font-medium text-yellow-900">Chưa xác định</span>
+                                        <span className="text-sm font-bold text-yellow-700 ml-1">{stats.chuaXacDinh}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Cột 2: Phân bổ Chuyên viên */}
+                        <div>
+                            <h3 className="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-3">
+                                Phân bổ theo chuyên viên
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {Object.entries(stats.handlers)
+                                    .sort((a, b) => b[1] - a[1]) // Sắp xếp giảm dần
+                                    .map(([handler, count]) => (
+                                        <div key={handler} className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
+                                            <span className="text-sm font-medium text-slate-700">{handler}</span>
+                                            <span className="text-xs font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">{count}</span>
+                                        </div>
+                                    ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Selection toolbar */}

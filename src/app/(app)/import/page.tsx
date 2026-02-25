@@ -46,14 +46,25 @@ export default function ImportPage() {
             })
 
             if (!res.ok) {
-                const text = await res.text()
-                setLog(prev => [...prev, `❌ Server lỗi ${res.status}: ${text.slice(0, 200)}`])
+                try {
+                    const data = await res.json()
+                    if (data.logs && Array.isArray(data.logs)) {
+                        setLog(data.logs)
+                    } else {
+                        setLog(prev => [...prev, `❌ Server lỗi ${res.status}: Không lấy được chi tiết lỗi`])
+                    }
+                } catch {
+                    const text = await res.text()
+                    setLog(prev => [...prev, `❌ Server lỗi ${res.status}: ${text.slice(0, 200)}`])
+                }
                 setError(true)
                 return
             }
 
             const data = await res.json()
-            if (data.logs) setLog(data.logs)
+            if (data.logs && Array.isArray(data.logs)) {
+                setLog(data.logs)
+            }
             setError(!!data.error)
             setDone(!data.error)
 
