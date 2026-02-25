@@ -10,6 +10,7 @@ import {
 import { cn, truncate } from '@/lib/utils'
 import { Search, RefreshCw, Plus, Download, ChevronUp, ChevronDown, Trash2, Loader2 } from 'lucide-react'
 import AddDocumentModal from './AddDocumentModal'
+import ConfirmModal from './ConfirmModal'
 import { useToast } from './Toast'
 
 interface Props {
@@ -162,6 +163,7 @@ export default function DocumentsPage({ docType, status, title, description }: P
     const [editDoc, setEditDoc] = useState<Document | null>(null)
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [deleting, setDeleting] = useState(false)
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false)
     const toast = useToast()
 
     const cols = getColDefs(docType, status)
@@ -184,10 +186,13 @@ export default function DocumentsPage({ docType, status, title, description }: P
         }
     }
 
-    async function handleBatchDelete() {
+    function handleBatchDelete() {
         if (selectedIds.size === 0) return
-        const confirmed = window.confirm(`Bạn có chắc muốn xóa ${selectedIds.size} văn bản? Hành động này không thể hoàn tác.`)
-        if (!confirmed) return
+        setShowConfirmDelete(true)
+    }
+
+    async function executeBatchDelete() {
+        if (selectedIds.size === 0) return
 
         setDeleting(true)
         try {
@@ -207,6 +212,7 @@ export default function DocumentsPage({ docType, status, title, description }: P
             }
             toast.success(`Đã xóa ${json.deleted} văn bản và cập nhật STT`)
             setSelectedIds(new Set())
+            setShowConfirmDelete(false)
             fetchDocs()
         } catch {
             toast.error('Không thể kết nối máy chủ')
@@ -526,13 +532,23 @@ export default function DocumentsPage({ docType, status, title, description }: P
                 )}
             </div>
 
-            {/* Add Document Modal */}
             <AddDocumentModal
                 open={showAddModal}
                 onClose={() => setShowAddModal(false)}
                 onSuccess={fetchDocs}
                 docType={docType}
                 status={status}
+            />
+
+            {/* Confirm Delete Modal */}
+            <ConfirmModal
+                open={showConfirmDelete}
+                title="Xóa văn bản"
+                message={`Bạn có chắc muốn xóa ${selectedIds.size} văn bản đã chọn? Hành động này không thể hoàn tác.`}
+                confirmText={`Xóa ${selectedIds.size} văn bản`}
+                onConfirm={executeBatchDelete}
+                onCancel={() => setShowConfirmDelete(false)}
+                loading={deleting}
             />
 
             {/* Edit Document Modal */}

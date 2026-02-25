@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Upload, Terminal, CheckCircle, AlertCircle, Loader, FileSpreadsheet } from 'lucide-react'
+import ConfirmModal from '@/components/ConfirmModal'
 
 export default function ImportPage() {
     const [log, setLog] = useState<string[]>([])
@@ -10,21 +11,24 @@ export default function ImportPage() {
     const [error, setError] = useState(false)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const fileRef = useRef<HTMLInputElement>(null)
+    const [showConfirm, setShowConfirm] = useState(false)
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]
         if (file) setSelectedFile(file)
     }
 
-    async function handleImport() {
+    function onImportClick() {
         if (!selectedFile) {
             setLog(['❌ Vui lòng chọn file Excel trước khi import.'])
             setError(true)
             return
         }
+        setShowConfirm(true)
+    }
 
-        if (!confirm('⚠️ Thao tác này sẽ XÓA TOÀN BỘ dữ liệu cũ và import lại. Tiếp tục?')) return
-
+    async function executeImport() {
+        setShowConfirm(false)
         setLoading(true)
         setDone(false)
         setError(false)
@@ -32,7 +36,9 @@ export default function ImportPage() {
 
         try {
             const formData = new FormData()
-            formData.append('file', selectedFile)
+            if (selectedFile) {
+                formData.append('file', selectedFile)
+            }
 
             const res = await fetch('/api/import', {
                 method: 'POST',
@@ -112,7 +118,7 @@ export default function ImportPage() {
                     </button>
 
                     <button
-                        onClick={handleImport}
+                        onClick={onImportClick}
                         disabled={loading || !selectedFile}
                         className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
@@ -164,6 +170,16 @@ export default function ImportPage() {
                     )}
                 </div>
             )}
+            {/* Confirm Modal */}
+            <ConfirmModal
+                open={showConfirm}
+                title="Xác nhận Import"
+                message="Thao tác này sẽ XÓA TOÀN BỘ dữ liệu cũ trong cơ sở dữ liệu và import lại từ đầu. Hành động này không thể hoàn tác. Bạn có chắc chắn muốn tiếp tục?"
+                confirmText="Tiến hành Import"
+                onConfirm={executeImport}
+                onCancel={() => setShowConfirm(false)}
+                loading={loading}
+            />
         </div>
     )
 }

@@ -60,6 +60,63 @@ export async function POST(request: NextRequest) {
         const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' })
         logs.push(`📂 Sheets: ${wb.SheetNames.join(', ')}`)
 
+        // -------------------------------------------------------------
+        // BƯỚC 1: PRE-VALIDATION (Kiểm tra lỗi dữ liệu trước khi xóa DB)
+        // Lỗi thường gặp: Trùng STT trong cùng một Sheet (cùng doc_type, status)
+        // -------------------------------------------------------------
+        logs.push('🔍 Đang kiểm tra tính hợp lệ của dữ liệu (Pre-validation)...')
+        let hasValidationError = false
+
+        for (const [sheetName] of Object.entries(SHEET_MAP)) {
+            if (!wb.SheetNames.includes(sheetName)) continue
+
+            const ws = wb.Sheets[sheetName]
+            const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null })
+            if (rows.length < 3) continue
+
+            const h1 = (rows[0] as unknown[]).map(c => norm(c) ?? '')
+            const ciStt = findCol(h1, 'STT')
+            const ciName = findCol(h1, 'Tên gọi văn bản', 'Tên gọi', 'TÊN GỌI')
+
+            const seenStt = new Set<number>()
+            const duplicateStts = new Set<number>()
+            let sttCounter = 0
+
+            for (const rawRow of rows.slice(2)) {
+                const row = rawRow as unknown[]
+                const name = ciName >= 0 ? norm(row[ciName]) : null
+                if (!name) continue // Bỏ qua dòng trống
+
+                sttCounter++
+                let currentStt = sttCounter
+
+                if (ciStt >= 0 && row[ciStt] !== null) {
+                    const n = Number(row[ciStt])
+                    if (!isNaN(n) && n > 0) currentStt = Math.round(n)
+                }
+
+                if (seenStt.has(currentStt)) {
+                    duplicateStts.add(currentStt)
+                } else {
+                    seenStt.add(currentStt)
+                }
+            }
+
+            if (duplicateStts.size > 0) {
+                logs.push(`❌ [${sheetName}]: Phát hiện STT trùng lặp: ${Array.from(duplicateStts).join(', ')}`)
+                hasValidationError = true
+            }
+        }
+
+        if (hasValidationError) {
+            logs.push('⛔ Import bị hủy bỏ vì có lỗi dữ liệu. Vui lòng sửa lại file Excel (không được để trùng STT) và thử lại.')
+            return NextResponse.json({ logs, error: true }, { status: 400 })
+        }
+        logs.push('✅ Dữ liệu hợp lệ, chuẩn bị import...')
+
+        // -------------------------------------------------------------
+        // BƯỚC 2: TIẾN HÀNH XÓA VÀ IMPORT 
+        // -------------------------------------------------------------
         // Xóa dữ liệu cũ
         logs.push('🗑️ Xóa dữ liệu cũ...')
         const { error: delDocErr } = await supabaseAdmin.from('documents').delete().neq('id', '00000000-0000-0000-0000-000000000000')
