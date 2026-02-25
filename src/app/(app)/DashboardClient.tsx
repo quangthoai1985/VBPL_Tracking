@@ -242,104 +242,106 @@ export default function DashboardClient() {
     }
 
     return (
-        <div className="p-6 space-y-6 max-w-7xl mx-auto">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-slate-800">Tổng Hợp Chung</h1>
-                <p className="text-slate-500 text-sm mt-0.5">
-                    Báo cáo và phương hướng xử lý các Nghị quyết, Quyết định do HĐND, UBND tỉnh An Giang ban hành
-                </p>
-            </div>
+        <div className="w-full h-full overflow-y-auto bg-slate-50">
+            <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+                {/* Header */}
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-800">Tổng Hợp Chung</h1>
+                    <p className="text-slate-500 text-sm mt-0.5">
+                        Báo cáo và phương hướng xử lý các Nghị quyết, Quyết định do HĐND, UBND tỉnh An Giang ban hành
+                    </p>
+                </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                {cards.map((card) => {
-                    const Icon = card.icon
-                    return (
-                        <div key={card.label}
-                            className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow group">
-                            <div className={`h-1.5 bg-gradient-to-r ${card.color}`} />
-                            <div className="p-5">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <p className="text-slate-500 text-sm font-medium">{card.label}</p>
-                                        <p className="text-3xl font-bold text-slate-800 mt-1">{card.value}</p>
-                                        <p className="text-slate-400 text-xs mt-1.5">{card.sub}</p>
-                                    </div>
-                                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${card.color} flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity`}>
-                                        <Icon className="w-5 h-5 text-white" />
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    {cards.map((card) => {
+                        const Icon = card.icon
+                        return (
+                            <div key={card.label}
+                                className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow group">
+                                <div className={`h-1.5 bg-gradient-to-r ${card.color}`} />
+                                <div className="p-5">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <p className="text-slate-500 text-sm font-medium">{card.label}</p>
+                                            <p className="text-3xl font-bold text-slate-800 mt-1">{card.value}</p>
+                                            <p className="text-slate-400 text-xs mt-1.5">{card.sub}</p>
+                                        </div>
+                                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${card.color} flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity`}>
+                                            <Icon className="w-5 h-5 text-white" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )
-                })}
-            </div>
-
-            {/* ====== TABLE 1: NQ HĐND ====== */}
-            <SummaryTable
-                title="1. Đối với 243 Nghị quyết của Hội đồng nhân dân tỉnh"
-                data={nqTable}
-                totalCanXL={nqTotalCanXL}
-                totalBaiBo={nqTotalBaiBo}
-                totalBanHanh={nqTotalBanHanh}
-                accentColor="blue"
-            />
-
-            {/* ====== TABLE 2: QĐ UBND ====== */}
-            <SummaryTable
-                title="2. Đối với 322 Quyết định của Ủy ban nhân dân tỉnh"
-                data={qdTable}
-                totalCanXL={qdTotalCanXL}
-                totalBaiBo={qdTotalBaiBo}
-                totalBanHanh={qdTotalBanHanh}
-                accentColor="emerald"
-            />
-
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Pie Chart */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-                    <h2 className="font-semibold text-slate-700 mb-4">Hình Thức Xử Lý (Tổng hợp)</h2>
-                    {pieData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={260}>
-                            <PieChart>
-                                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90}
-                                    dataKey="value" paddingAngle={2}>
-                                    {pieData.map((_, i) => (
-                                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip formatter={(v) => [`${v} VB`, '']} />
-                                <Legend iconType="circle" iconSize={8} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="h-[260px] flex items-center justify-center text-slate-400 text-sm">
-                            Chưa có dữ liệu
-                        </div>
-                    )}
+                        )
+                    })}
                 </div>
 
-                {/* Bar Chart */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-                    <h2 className="font-semibold text-slate-700 mb-4">Tiến Độ Theo Chuyên Viên</h2>
-                    {handlerBarData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={260}>
-                            <BarChart data={handlerBarData} margin={{ top: 0, right: 10, left: -10, bottom: 0 }}>
-                                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                                <YAxis tick={{ fontSize: 12 }} />
-                                <Tooltip />
-                                <Legend iconType="circle" iconSize={8} />
-                                <Bar dataKey="can_xu_ly" name="Cần xử lý" fill="#f97316" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="da_xu_ly" name="Đã xử lý" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="h-[260px] flex items-center justify-center text-slate-400 text-sm">
-                            Chưa có dữ liệu
-                        </div>
-                    )}
+                {/* ====== TABLE 1: NQ HĐND ====== */}
+                <SummaryTable
+                    title="1. Đối với 243 Nghị quyết của Hội đồng nhân dân tỉnh"
+                    data={nqTable}
+                    totalCanXL={nqTotalCanXL}
+                    totalBaiBo={nqTotalBaiBo}
+                    totalBanHanh={nqTotalBanHanh}
+                    accentColor="blue"
+                />
+
+                {/* ====== TABLE 2: QĐ UBND ====== */}
+                <SummaryTable
+                    title="2. Đối với 322 Quyết định của Ủy ban nhân dân tỉnh"
+                    data={qdTable}
+                    totalCanXL={qdTotalCanXL}
+                    totalBaiBo={qdTotalBaiBo}
+                    totalBanHanh={qdTotalBanHanh}
+                    accentColor="emerald"
+                />
+
+                {/* Charts Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Pie Chart */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+                        <h2 className="font-semibold text-slate-700 mb-4">Hình Thức Xử Lý (Tổng hợp)</h2>
+                        {pieData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={260}>
+                                <PieChart>
+                                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90}
+                                        dataKey="value" paddingAngle={2}>
+                                        {pieData.map((_, i) => (
+                                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip formatter={(v) => [`${v} VB`, '']} />
+                                    <Legend iconType="circle" iconSize={8} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-[260px] flex items-center justify-center text-slate-400 text-sm">
+                                Chưa có dữ liệu
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Bar Chart */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+                        <h2 className="font-semibold text-slate-700 mb-4">Tiến Độ Theo Chuyên Viên</h2>
+                        {handlerBarData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={260}>
+                                <BarChart data={handlerBarData} margin={{ top: 0, right: 10, left: -10, bottom: 0 }}>
+                                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                                    <YAxis tick={{ fontSize: 12 }} />
+                                    <Tooltip />
+                                    <Legend iconType="circle" iconSize={8} />
+                                    <Bar dataKey="can_xu_ly" name="Cần xử lý" fill="#f97316" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="da_xu_ly" name="Đã xử lý" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-[260px] flex items-center justify-center text-slate-400 text-sm">
+                                Chưa có dữ liệu
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

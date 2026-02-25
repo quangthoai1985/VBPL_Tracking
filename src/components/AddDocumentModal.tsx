@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, Save, Loader2, FileText, Pencil } from 'lucide-react'
-import { Document, DocType, Status, Agency, HANDLER_NAMES } from '@/lib/types'
+import { Document, DocType, Status, Agency, Handler } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useToast } from './Toast'
 
@@ -105,6 +105,7 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
     const [saving, setSaving] = useState(false)
     const [form, setForm] = useState<Record<string, string | number>>({})
     const [agencies, setAgencies] = useState<Agency[]>([])
+    const [handlersList, setHandlersList] = useState<Handler[]>([])
 
     const isEdit = !!editDoc
     const workflowFields = getWorkflowFields(docType, status)
@@ -116,6 +117,9 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
             const supabase = createClient()
             supabase.from('agencies').select('*').order('name').then(({ data }) => {
                 if (data) setAgencies(data as Agency[])
+            })
+            supabase.from('handlers').select('*').eq('is_active', true).order('id').then(({ data }) => {
+                if (data) setHandlersList(data as Handler[])
             })
         })
     }, [open])
@@ -296,8 +300,8 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                                         className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-50/50 hover:bg-white transition-colors"
                                     >
                                         <option value="">-- Chọn chuyên viên --</option>
-                                        {HANDLER_NAMES.map(h => (
-                                            <option key={h} value={h}>{h}</option>
+                                        {handlersList.map(h => (
+                                            <option key={h.id} value={h.name}>{h.name}</option>
                                         ))}
                                     </select>
                                 </div>

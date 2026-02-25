@@ -3,9 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
-    Document, DocType, Status, Agency,
+    Document, DocType, Status, Agency, Handler,
     PROCESSING_FORM_LABELS, PROCESSING_FORM_COLORS,
-    HANDLER_NAMES,
 } from '@/lib/types'
 import { cn, truncate } from '@/lib/utils'
 import { Search, RefreshCw, Plus, Download, ChevronUp, ChevronDown, Trash2, Loader2 } from 'lucide-react'
@@ -159,6 +158,7 @@ export default function DocumentsPage({ docType, status, title, description }: P
     const [docs, setDocs] = useState<Document[]>([])
     const [stats, setStats] = useState<DocStats | null>(null)
     const [agencies, setAgencies] = useState<Agency[]>([])
+    const [handlersList, setHandlersList] = useState<Handler[]>([])
     const [loading, setLoading] = useState(true)
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(0)
@@ -299,6 +299,9 @@ export default function DocumentsPage({ docType, status, title, description }: P
         supabase.from('agencies').select('*').order('name').then(({ data }) => {
             if (data) setAgencies(data as Agency[])
         })
+        supabase.from('handlers').select('*').eq('is_active', true).order('id').then(({ data }) => {
+            if (data) setHandlersList(data as Handler[])
+        })
     }, [])
 
     useEffect(() => { setPage(0) }, [search, filterHandler, filterAgency, docType, status])
@@ -317,7 +320,7 @@ export default function DocumentsPage({ docType, status, title, description }: P
     }
 
     return (
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 flex flex-col flex-1 min-h-0 w-full h-full gap-4">
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
                 <div>
@@ -363,8 +366,8 @@ export default function DocumentsPage({ docType, status, title, description }: P
                         className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
                     >
                         <option value="">-- Chuyên viên --</option>
-                        {HANDLER_NAMES.map(h => (
-                            <option key={h} value={h}>{h}</option>
+                        {handlersList.map(h => (
+                            <option key={h.id} value={h.name}>{h.name}</option>
                         ))}
                     </select>
 
@@ -475,8 +478,8 @@ export default function DocumentsPage({ docType, status, title, description }: P
             )}
 
             {/* Table */}
-            <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-                <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-260px)]">
+            <div className="bg-white rounded-xl border border-slate-100 flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 overflow-auto">
                     <table className="w-full text-xs" style={{ minWidth: `${540 + cols.length * 130}px` }}>
                         <thead className="sticky top-0 z-10">
                             <tr className="bg-slate-50 border-b border-slate-100">
@@ -597,7 +600,7 @@ export default function DocumentsPage({ docType, status, title, description }: P
 
                 {/* Pagination */}
                 {total > PAGE_SIZE && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/50">
+                    <div className="shrink-0 flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/50">
                         <p className="text-sm text-slate-500">
                             Trang {page + 1} / {Math.ceil(total / PAGE_SIZE)}
                         </p>

@@ -134,7 +134,15 @@ export const ROLE_LABELS: Record<UserRole, string> = {
     guest: 'Khách',
 }
 
-export const HANDLER_NAMES = ['Thảo', 'Nhung', 'Trâm', 'Loan', 'Thanh Hằng']
+export interface Handler {
+    id: number
+    name: string
+    is_active: boolean
+    created_at: string
+}
+
+// Cần xóa HANDLER_NAMES, tạm comment ra để tìm và sửa lỗi các nơi đang gọi
+// export const HANDLER_NAMES = ['Thảo', 'Nhung', 'Trâm', 'Loan', 'Thanh Hằng']
 
 // Màu sắc cho hình thức xử lý
 export const PROCESSING_FORM_COLORS: Record<ProcessingForm, string> = {
