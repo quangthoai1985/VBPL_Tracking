@@ -3,11 +3,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
-    Document, DocType, Status, Agency, Handler,
-    PROCESSING_FORM_LABELS, PROCESSING_FORM_COLORS,
+    Document, DocType, Status, DocCategory, Agency, Handler,
+    CATEGORY_FIELDS, DOC_CATEGORY_LABELS,
 } from '@/lib/types'
 import { cn, truncate } from '@/lib/utils'
-import { Search, RefreshCw, Plus, Download, ChevronUp, ChevronDown, Trash2, Loader2 } from 'lucide-react'
+import { Search, RefreshCw, Plus, Download, ChevronUp, ChevronDown, Trash2, Loader2, AlertTriangle } from 'lucide-react'
 import AddDocumentModal from './AddDocumentModal'
 import ConfirmModal from './ConfirmModal'
 import { useToast } from './Toast'
@@ -25,11 +25,20 @@ type SortField = 'stt' | 'name' | 'handler_name' | 'updated_at' | 'expected_date
 type SortDir = 'asc' | 'desc'
 
 interface DocStats {
-    thayThe: number
-    baiBo: number
-    banHanhMoi: number
-    chuaXacDinh: number
+    // Nhóm "Văn bản tiếp tục áp dụng"
+    ttThayThe: number
+    ttBaiBo: number
+    ttKhongXuLy: number
+    ttHetHieuLuc: number
+    // Nhóm "Văn bản mới"
+    vmBanHanhMoi: number
+    vmSuaDoiBoSung: number
+    vmThayThe: number
+    vmBaiBo: number
+    // Handlers
     handlers: Record<string, number>
+    // Số VB cần rà soát
+    needsReviewCount: number
 }
 
 // ─── Định nghĩa cột sau cột "Hình thức XL" và "Người XL" ─────────────────────
@@ -75,7 +84,7 @@ const COLS_NQ_CAN: ColDef[] = [
     { key: 'notes', label: 'Ghi chú', minW: 110, render: d => strCell(d.notes, 40) },
 ]
 
-// NQ đã xử lý – như trên nhưng thêm Thời gian xử lý, bỏ Ghi chú
+// NQ đã xử lý
 const COLS_NQ_DA: ColDef[] = [
     ...COLS_NQ_CAN.filter(c => c.key !== 'notes'),
     { key: 'processing_time', label: 'Thời gian xử lý', minW: 140, render: d => strCell(d.processing_time) },
@@ -106,42 +115,82 @@ const COLS_QD_UBND_CAN: ColDef[] = [
     { key: 'notes', label: 'Ghi chú', minW: 110, render: d => strCell(d.notes, 40) },
 ]
 
-// QD UBND đã xử lý – như trên, bỏ Ghi chú, thêm Thời gian xử lý
+// QD UBND đã xử lý
 const COLS_QD_UBND_DA: ColDef[] = [
     ...COLS_QD_UBND_CAN.filter(c => c.key !== 'notes'),
     { key: 'processing_time', label: 'Thời gian xử lý', minW: 140, render: d => strCell(d.processing_time) },
 ]
 
-// QD CT.UBND – giống QD_UBND cần xử lý (cơ bản như nhau, htxl 3 cột)
 const COLS_QD_CT_CAN: ColDef[] = COLS_QD_UBND_CAN
 
 function getColDefs(docType: DocType, status: Status): ColDef[] {
     if (docType === 'NQ') return status === 'can_xu_ly' ? COLS_NQ_CAN : COLS_NQ_DA
     if (docType === 'QD_CT_UBND') return COLS_QD_CT_CAN
-    // QD_UBND
     return status === 'can_xu_ly' ? COLS_QD_UBND_CAN : COLS_QD_UBND_DA
 }
 
-// ─── Badge hình thức xử lý ────────────────────────────────────────────────────
-function ProcessingFormBadges({ doc, docType }: { doc: Document; docType: DocType }) {
-    const all = [
-        { key: 'count_thay_the', label: 'Thay thế', color: 'bg-blue-100 text-blue-800', count: doc.count_thay_the },
-        { key: 'count_bai_bo', label: 'Bãi bỏ', color: 'bg-red-100 text-red-800', count: doc.count_bai_bo },
-        { key: 'count_ban_hanh_moi', label: 'Ban hành mới', color: 'bg-green-100 text-green-800', count: doc.count_ban_hanh_moi },
-    ]
-    // Thêm "Chưa XĐ" cho NQ và QD_UBND (không có cho QD_CT_UBND)
-    if (docType !== 'QD_CT_UBND') {
-        all.push({ key: 'count_chua_xac_dinh', label: 'Chưa XĐ', color: 'bg-yellow-100 text-yellow-800', count: doc.count_chua_xac_dinh })
+// ─── Badge hình thức xử lý (NEW) ──────────────────────────────────────────────
+function ProcessingFormBadges({ doc }: { doc: Document }) {
+    const cat = doc.doc_category
+
+    // Nếu needs_review → hiện badge cảnh báo
+    if (doc.needs_review) {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-semibold">
+                <AlertTriangle className="w-3 h-3" />
+                Cần rà soát
+            </span>
+        )
     }
 
+    const badges: { label: string; count: number; color: string }[] = []
 
-    const badges = all.filter(b => b.count > 0)
-    if (badges.length === 0) return <span className="text-slate-300">—</span>
+    if (cat === 'van_ban_tiep_tuc') {
+        if (doc.count_tt_thay_the > 0) badges.push({ label: 'Thay thế', count: doc.count_tt_thay_the, color: 'bg-blue-100 text-blue-800' })
+        if (doc.count_tt_bai_bo > 0) badges.push({ label: 'Bãi bỏ', count: doc.count_tt_bai_bo, color: 'bg-red-100 text-red-800' })
+        if (doc.count_tt_khong_xu_ly > 0) badges.push({ label: 'Không XL', count: doc.count_tt_khong_xu_ly, color: 'bg-slate-100 text-slate-800' })
+        if (doc.count_tt_het_hieu_luc > 0) badges.push({ label: 'Hết HL', count: doc.count_tt_het_hieu_luc, color: 'bg-purple-100 text-purple-800' })
+    } else if (cat === 'van_ban_moi') {
+        if (doc.count_vm_ban_hanh_moi > 0) badges.push({ label: 'Ban hành mới', count: doc.count_vm_ban_hanh_moi, color: 'bg-green-100 text-green-800' })
+        if (doc.count_vm_sua_doi_bo_sung > 0) badges.push({ label: 'Sửa đổi BS', count: doc.count_vm_sua_doi_bo_sung, color: 'bg-teal-100 text-teal-800' })
+        if (doc.count_vm_thay_the > 0) badges.push({ label: 'Thay thế', count: doc.count_vm_thay_the, color: 'bg-blue-100 text-blue-800' })
+        if (doc.count_vm_bai_bo > 0) badges.push({ label: 'Bãi bỏ', count: doc.count_vm_bai_bo, color: 'bg-red-100 text-red-800' })
+    }
+
+    // Fallback: dùng legacy columns nếu chưa có cột mới
+    if (badges.length === 0) {
+        const legacyAll = [
+            { label: 'Thay thế', count: doc.count_thay_the || 0, color: 'bg-blue-100 text-blue-800' },
+            { label: 'Bãi bỏ', count: doc.count_bai_bo || 0, color: 'bg-red-100 text-red-800' },
+            { label: 'Ban hành mới', count: doc.count_ban_hanh_moi || 0, color: 'bg-green-100 text-green-800' },
+            { label: 'Chưa XĐ', count: doc.count_chua_xac_dinh || 0, color: 'bg-yellow-100 text-yellow-800' },
+        ].filter(b => b.count > 0)
+        if (legacyAll.length > 0) {
+            return (
+                <div className="flex flex-wrap gap-1">
+                    {legacyAll.map(f => (
+                        <span key={f.label}
+                            className={cn('inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold', f.color)}
+                        >
+                            <span>{f.count}</span>
+                            <span className="font-normal opacity-75">{f.label}</span>
+                        </span>
+                    ))}
+                </div>
+            )
+        }
+        return <span className="text-slate-300">—</span>
+    }
+
+    // Nhóm label nhỏ trước badges
+    const catLabel = cat === 'van_ban_tiep_tuc' ? 'TT' : 'Mới'
+    const catColor = cat === 'van_ban_tiep_tuc' ? 'text-indigo-500' : 'text-emerald-500'
 
     return (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 items-center">
+            <span className={cn('text-[9px] font-bold uppercase tracking-wider mr-0.5', catColor)}>{catLabel}</span>
             {badges.map(f => (
-                <span key={f.key}
+                <span key={f.label}
                     className={cn('inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold', f.color)}
                 >
                     <span>{f.count}</span>
@@ -176,7 +225,6 @@ export default function DocumentsPage({ docType, status, title, description }: P
     const toast = useToast()
 
     const cols = getColDefs(docType, status)
-    // Tổng số cột: Checkbox + STT + Tên + Cơ quan + HTXL + Người XL + dynamic cols
     const totalCols = 6 + cols.length
 
     function toggleSelect(id: string) {
@@ -242,7 +290,7 @@ export default function DocumentsPage({ docType, status, title, description }: P
 
         let statsQuery = supabase
             .from('v_documents_full')
-            .select('count_thay_the, count_bai_bo, count_ban_hanh_moi, count_chua_xac_dinh, handler_name')
+            .select('doc_category, count_tt_thay_the, count_tt_bai_bo, count_tt_khong_xu_ly, count_tt_het_hieu_luc, count_vm_ban_hanh_moi, count_vm_sua_doi_bo_sung, count_vm_thay_the, count_vm_bai_bo, count_thay_the, count_bai_bo, count_ban_hanh_moi, count_chua_xac_dinh, handler_name, needs_review')
             .eq('doc_type', docType)
             .eq('status', status)
 
@@ -268,28 +316,42 @@ export default function DocumentsPage({ docType, status, title, description }: P
         }
 
         if (!resStats.error && resStats.data) {
-            let thayThe = 0, baiBo = 0, banHanhMoi = 0, chuaXacDinh = 0
+            let ttThayThe = 0, ttBaiBo = 0, ttKhongXuLy = 0, ttHetHieuLuc = 0
+            let vmBanHanhMoi = 0, vmSuaDoiBoSung = 0, vmThayThe = 0, vmBaiBo = 0
             const handlers: Record<string, number> = {}
+            let needsReviewCount = 0
 
-            resStats.data.forEach(d => {
-                const tt = d.count_thay_the || 0
-                const bb = d.count_bai_bo || 0
-                const bhm = d.count_ban_hanh_moi || 0
-                const cxd = d.count_chua_xac_dinh || 0
+            resStats.data.forEach((d: any) => {
+                // Cột mới
+                const tt1 = d.count_tt_thay_the || 0
+                const tt2 = d.count_tt_bai_bo || 0
+                const tt3 = d.count_tt_khong_xu_ly || 0
+                const tt4 = d.count_tt_het_hieu_luc || 0
+                const vm1 = d.count_vm_ban_hanh_moi || 0
+                const vm2 = d.count_vm_sua_doi_bo_sung || 0
+                const vm3 = d.count_vm_thay_the || 0
+                const vm4 = d.count_vm_bai_bo || 0
 
-                thayThe += tt
-                baiBo += bb
-                banHanhMoi += bhm
-                chuaXacDinh += cxd
+                ttThayThe += tt1
+                ttBaiBo += tt2
+                ttKhongXuLy += tt3
+                ttHetHieuLuc += tt4
+                vmBanHanhMoi += vm1
+                vmSuaDoiBoSung += vm2
+                vmThayThe += vm3
+                vmBaiBo += vm4
+
+                if (d.needs_review) needsReviewCount++
 
                 const h = d.handler_name || 'Chưa phân công'
-                const totalForThisDoc = tt + bb + bhm + cxd
-
-                // Cộng dồn TỔNG SỐ LƯỢNG văn bản thực tế mà người này gánh, thay vì chỉ đếm số lượng nhóm biên chế
-                handlers[h] = (handlers[h] || 0) + (totalForThisDoc > 0 ? totalForThisDoc : 1)
+                const totalForThisDoc = tt1 + tt2 + tt3 + tt4 + vm1 + vm2 + vm3 + vm4
+                // Fallback nếu chưa migrate: dùng legacy
+                const legacyTotal = (d.count_thay_the || 0) + (d.count_bai_bo || 0) + (d.count_ban_hanh_moi || 0) + (d.count_chua_xac_dinh || 0)
+                const docTotal = totalForThisDoc > 0 ? totalForThisDoc : legacyTotal > 0 ? legacyTotal : 1
+                handlers[h] = (handlers[h] || 0) + docTotal
             })
 
-            setStats({ thayThe, baiBo, banHanhMoi, chuaXacDinh, handlers })
+            setStats({ ttThayThe, ttBaiBo, ttKhongXuLy, ttHetHieuLuc, vmBanHanhMoi, vmSuaDoiBoSung, vmThayThe, vmBaiBo, handlers, needsReviewCount })
         }
 
         setLoading(false)
@@ -318,6 +380,12 @@ export default function DocumentsPage({ docType, status, title, description }: P
             ? <ChevronUp className="w-3 h-3 text-blue-500" />
             : <ChevronDown className="w-3 h-3 text-blue-500" />
     }
+
+    // Tổng số mới
+    const totalNewCount = stats
+        ? stats.ttThayThe + stats.ttBaiBo + stats.ttKhongXuLy + stats.ttHetHieuLuc
+        + stats.vmBanHanhMoi + stats.vmSuaDoiBoSung + stats.vmThayThe + stats.vmBaiBo
+        : 0
 
     return (
         <div className="p-4 sm:p-6 flex flex-col flex-1 min-h-0 w-full h-full gap-4">
@@ -397,52 +465,91 @@ export default function DocumentsPage({ docType, status, title, description }: P
 
                 {/* Bản thống kê (Stats) */}
                 {stats && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 grid md:grid-cols-2 gap-6 animate-fadeIn">
-                        {/* Cột 1: Hình thức xử lý */}
-                        <div>
-                            <h3 className="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-3">
-                                Tổng số theo hình thức xử lý
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                    <span className="text-sm font-medium text-blue-900">Thay thế</span>
-                                    <span className="text-sm font-bold text-blue-700 ml-1">{stats.thayThe}</span>
-                                </div>
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-100 rounded-lg">
-                                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                    <span className="text-sm font-medium text-red-900">Bãi bỏ</span>
-                                    <span className="text-sm font-bold text-red-700 ml-1">{stats.baiBo}</span>
-                                </div>
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-100 rounded-lg">
-                                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                                    <span className="text-sm font-medium text-green-900">Ban hành mới</span>
-                                    <span className="text-sm font-bold text-green-700 ml-1">{stats.banHanhMoi}</span>
-                                </div>
-                                {docType !== 'QD_CT_UBND' && (
-                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 border border-yellow-100 rounded-lg">
-                                        <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-                                        <span className="text-sm font-medium text-yellow-900">Chưa xác định</span>
-                                        <span className="text-sm font-bold text-yellow-700 ml-1">{stats.chuaXacDinh}</span>
-                                    </div>
-                                )}
+                    <div className="mt-4 pt-4 border-t border-slate-100 space-y-5 animate-fadeIn">
+                        {/* Banner cần rà soát */}
+                        {stats.needsReviewCount > 0 && (
+                            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                                <span className="text-sm text-amber-800">
+                                    Có <strong>{stats.needsReviewCount}</strong> văn bản cần rà soát lại hình thức xử lý
+                                </span>
                             </div>
-                        </div>
+                        )}
 
-                        {/* Cột 2: Phân bổ Chuyên viên */}
-                        <div>
-                            <h3 className="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-3">
-                                Phân bổ theo chuyên viên
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                {Object.entries(stats.handlers)
-                                    .sort((a, b) => b[1] - a[1]) // Sắp xếp giảm dần
-                                    .map(([handler, count]) => (
-                                        <div key={handler} className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
-                                            <span className="text-sm font-medium text-slate-700">{handler}</span>
-                                            <span className="text-xs font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">{count}</span>
-                                        </div>
-                                    ))}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                            {/* Card 1: VB tiếp tục áp dụng */}
+                            <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 overflow-hidden">
+                                <div className="px-3 py-1.5 bg-indigo-100/80 border-b border-indigo-200">
+                                    <h4 className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">◆ Văn bản tiếp tục áp dụng</h4>
+                                </div>
+                                <div className="px-3 py-2 flex flex-wrap gap-1.5">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-blue-200 rounded-md text-xs shadow-sm">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                        <span className="text-blue-800">Thay thế</span>
+                                        <span className="font-bold text-blue-600">{stats.ttThayThe}</span>
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-red-200 rounded-md text-xs shadow-sm">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                        <span className="text-red-800">Bãi bỏ</span>
+                                        <span className="font-bold text-red-600">{stats.ttBaiBo}</span>
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-slate-200 rounded-md text-xs shadow-sm">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                        <span className="text-slate-700">Không xử lý</span>
+                                        <span className="font-bold text-slate-600">{stats.ttKhongXuLy}</span>
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-purple-200 rounded-md text-xs shadow-sm">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                                        <span className="text-purple-800">Hết hiệu lực</span>
+                                        <span className="font-bold text-purple-600">{stats.ttHetHieuLuc}</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Card 2: VB mới */}
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 overflow-hidden">
+                                <div className="px-3 py-1.5 bg-emerald-100/80 border-b border-emerald-200">
+                                    <h4 className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">◆ Văn bản mới</h4>
+                                </div>
+                                <div className="px-3 py-2 flex flex-wrap gap-1.5">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-green-200 rounded-md text-xs shadow-sm">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                        <span className="text-green-800">Ban hành mới</span>
+                                        <span className="font-bold text-green-600">{stats.vmBanHanhMoi}</span>
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-teal-200 rounded-md text-xs shadow-sm">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                                        <span className="text-teal-800">Sửa đổi BS</span>
+                                        <span className="font-bold text-teal-600">{stats.vmSuaDoiBoSung}</span>
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-blue-200 rounded-md text-xs shadow-sm">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                        <span className="text-blue-800">Thay thế</span>
+                                        <span className="font-bold text-blue-600">{stats.vmThayThe}</span>
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-red-200 rounded-md text-xs shadow-sm">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                        <span className="text-red-800">Bãi bỏ</span>
+                                        <span className="font-bold text-red-600">{stats.vmBaiBo}</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Card 3: Phân bổ theo chuyên viên */}
+                            <div className="rounded-xl border border-slate-200 bg-slate-50/60 overflow-hidden">
+                                <div className="px-3 py-1.5 bg-slate-100/80 border-b border-slate-200">
+                                    <h4 className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Phân bổ theo chuyên viên</h4>
+                                </div>
+                                <div className="px-3 py-2 flex flex-wrap gap-1.5">
+                                    {Object.entries(stats.handlers)
+                                        .sort((a, b) => b[1] - a[1])
+                                        .map(([handler, count]) => (
+                                            <span key={handler} className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-white border border-slate-200 rounded-md text-xs shadow-sm">
+                                                <span className="font-medium text-slate-700">{handler}</span>
+                                                <span className="font-bold text-slate-500 bg-slate-100 px-1 rounded text-[10px]">{count}</span>
+                                            </span>
+                                        ))}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -556,7 +663,8 @@ export default function DocumentsPage({ docType, status, title, description }: P
                                         className={cn(
                                             'border-b border-slate-50 hover:bg-blue-50/40 transition-colors cursor-pointer',
                                             i % 2 === 0 ? '' : 'bg-slate-50/30',
-                                            selectedIds.has(doc.id) && 'bg-blue-50 hover:bg-blue-100/60'
+                                            selectedIds.has(doc.id) && 'bg-blue-50 hover:bg-blue-100/60',
+                                            doc.needs_review && 'bg-amber-50/40 hover:bg-amber-50/70',
                                         )}
                                     >
                                         <td className="px-2 py-1.5" onClick={e => e.stopPropagation()}>
@@ -569,15 +677,20 @@ export default function DocumentsPage({ docType, status, title, description }: P
                                         </td>
                                         <td className="px-3 py-1.5 text-slate-500 font-mono">{doc.stt ?? i + 1 + page * PAGE_SIZE}</td>
                                         <td className="px-3 py-1.5">
-                                            <p className="font-medium text-slate-800 leading-tight" title={doc.name}>
-                                                {truncate(doc.name, 90)}
-                                            </p>
+                                            <div className="flex items-center gap-1.5">
+                                                {doc.needs_review && (
+                                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                                )}
+                                                <p className="font-medium text-slate-800 leading-tight" title={doc.name}>
+                                                    {truncate(doc.name, 90)}
+                                                </p>
+                                            </div>
                                         </td>
                                         <td className="px-3 py-1.5">
                                             <span className="text-slate-600">{doc.agency_name ?? '—'}</span>
                                         </td>
                                         <td className="px-3 py-1.5">
-                                            <ProcessingFormBadges doc={doc} docType={docType} />
+                                            <ProcessingFormBadges doc={doc} />
                                         </td>
                                         <td className="px-3 py-1.5">
                                             {doc.handler_name

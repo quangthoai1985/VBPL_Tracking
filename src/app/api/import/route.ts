@@ -221,6 +221,13 @@ export async function POST(request: NextRequest) {
                     processingForm = ['thay_the', 'bai_bo', 'ban_hanh_moi', 'chua_xac_dinh'][maxIdx]
                 }
 
+                // ─── Tự động map cột cũ sang cột mới ───
+                // Nếu có ban_hanh_moi > 0 → nhóm "Văn bản mới"
+                // Ngược lại → nhóm "Văn bản tiếp tục áp dụng"
+                const docCategory = countBanHanhMoi > 0 ? 'van_ban_moi' : 'van_ban_tiep_tuc'
+                const needsReview = countChuaXacDinh > 0
+                    || (countThayThe === 0 && countBaiBo === 0 && countBanHanhMoi === 0 && countChuaXacDinh === 0)
+
                 batch.push({
                     doc_type: cfg.docType,
                     status: cfg.status,
@@ -229,10 +236,23 @@ export async function POST(request: NextRequest) {
                     agency_id: agencyId,
                     handler_name: gv(row, 'handler'),
                     processing_form: processingForm,
+                    // Legacy columns
                     count_thay_the: countThayThe,
                     count_bai_bo: countBaiBo,
                     count_ban_hanh_moi: countBanHanhMoi,
                     count_chua_xac_dinh: countChuaXacDinh,
+                    // ─── Cột mới ───
+                    doc_category: docCategory,
+                    count_tt_thay_the: docCategory === 'van_ban_tiep_tuc' ? countThayThe : 0,
+                    count_tt_bai_bo: docCategory === 'van_ban_tiep_tuc' ? countBaiBo : 0,
+                    count_tt_khong_xu_ly: 0,
+                    count_tt_het_hieu_luc: 0,
+                    count_vm_ban_hanh_moi: docCategory === 'van_ban_moi' ? countBanHanhMoi : 0,
+                    count_vm_sua_doi_bo_sung: 0,
+                    count_vm_thay_the: docCategory === 'van_ban_moi' ? countThayThe : 0,
+                    count_vm_bai_bo: docCategory === 'van_ban_moi' ? countBaiBo : 0,
+                    needs_review: needsReview,
+                    // Workflow
                     reg_doc_agency: gv(row, 'reg_agency'),
                     reg_doc_reply: gv(row, 'reg_reply'),
                     reg_doc_ubnd: gv(row, 'reg_ubnd'),

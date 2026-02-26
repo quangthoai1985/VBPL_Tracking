@@ -3,11 +3,7 @@
 
 export type DocType = 'NQ' | 'QD_UBND' | 'QD_CT_UBND'
 export type Status = 'can_xu_ly' | 'da_xu_ly'
-export type ProcessingForm =
-    | 'thay_the'
-    | 'bai_bo'
-    | 'ban_hanh_moi'
-    | 'chua_xac_dinh'
+export type DocCategory = 'van_ban_tiep_tuc' | 'van_ban_moi'
 export type UserRole = 'admin' | 'chuyen_vien' | 'co_quan' | 'guest'
 
 export interface Agency {
@@ -35,8 +31,25 @@ export interface Document {
     name: string
     agency_id: number | null
     handler_name: string | null
-    processing_form: ProcessingForm | null
-    // Số lượng VB theo hình thức xử lý (mỗi dòng = 1 nhóm VB)
+
+    // ──── Hình thức xử lý mới ────
+    doc_category: DocCategory
+    // Nhóm "Văn bản tiếp tục áp dụng"
+    count_tt_thay_the: number
+    count_tt_bai_bo: number
+    count_tt_khong_xu_ly: number
+    count_tt_het_hieu_luc: number
+    // Nhóm "Văn bản mới"
+    count_vm_ban_hanh_moi: number
+    count_vm_sua_doi_bo_sung: number
+    count_vm_thay_the: number
+    count_vm_bai_bo: number
+
+    // Flag: cần rà soát lại (dữ liệu cũ chưa nhập đầy đủ)
+    needs_review: boolean
+
+    // Legacy columns (giữ tạm cho backward compat)
+    processing_form: string | null
     count_thay_the: number
     count_bai_bo: number
     count_ban_hanh_moi: number
@@ -119,13 +132,26 @@ export const STATUS_LABELS: Record<Status, string> = {
     da_xu_ly: 'Đã xử lý',
 }
 
-export const PROCESSING_FORM_LABELS: Record<ProcessingForm, string> = {
-    thay_the: 'Thay thế',
-    bai_bo: 'Bãi bỏ',
-    ban_hanh_moi: 'Ban hành mới',
-    chua_xac_dinh: 'Chưa xác định',
-
+export const DOC_CATEGORY_LABELS: Record<DocCategory, string> = {
+    van_ban_tiep_tuc: 'Văn bản tiếp tục áp dụng',
+    van_ban_moi: 'Văn bản mới',
 }
+
+// Thuộc tính theo từng nhóm
+export const CATEGORY_FIELDS = {
+    van_ban_tiep_tuc: [
+        { key: 'count_tt_thay_the', label: 'Thay thế' },
+        { key: 'count_tt_bai_bo', label: 'Bãi bỏ' },
+        { key: 'count_tt_khong_xu_ly', label: 'Không xử lý' },
+        { key: 'count_tt_het_hieu_luc', label: 'Hết hiệu lực theo thời gian' },
+    ],
+    van_ban_moi: [
+        { key: 'count_vm_ban_hanh_moi', label: 'Ban hành mới' },
+        { key: 'count_vm_sua_doi_bo_sung', label: 'Sửa đổi bổ sung' },
+        { key: 'count_vm_thay_the', label: 'Thay thế' },
+        { key: 'count_vm_bai_bo', label: 'Bãi bỏ' },
+    ],
+} as const
 
 export const ROLE_LABELS: Record<UserRole, string> = {
     admin: 'Quản trị viên',
@@ -139,15 +165,4 @@ export interface Handler {
     name: string
     is_active: boolean
     created_at: string
-}
-
-// Cần xóa HANDLER_NAMES, tạm comment ra để tìm và sửa lỗi các nơi đang gọi
-// export const HANDLER_NAMES = ['Thảo', 'Nhung', 'Trâm', 'Loan', 'Thanh Hằng']
-
-// Màu sắc cho hình thức xử lý
-export const PROCESSING_FORM_COLORS: Record<ProcessingForm, string> = {
-    thay_the: 'bg-blue-100 text-blue-800',
-    bai_bo: 'bg-red-100 text-red-800',
-    ban_hanh_moi: 'bg-green-100 text-green-800',
-    chua_xac_dinh: 'bg-yellow-100 text-yellow-800',
 }

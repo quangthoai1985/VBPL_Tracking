@@ -19,6 +19,12 @@ export async function POST(request: NextRequest) {
                 { status: 400 },
             )
         }
+        if (!body.doc_category || !['van_ban_tiep_tuc', 'van_ban_moi'].includes(body.doc_category)) {
+            return NextResponse.json(
+                { error: 'Vui lòng chọn nhóm hình thức xử lý' },
+                { status: 400 },
+            )
+        }
 
         const supabase = await createClient()
 
@@ -33,7 +39,7 @@ export async function POST(request: NextRequest) {
             .single()
         const nextStt = (maxRow?.stt ?? 0) + 1
 
-        // Build insert payload – chỉ lấy các trường hợp lệ
+        // Build insert payload
         const doc = {
             doc_type: body.doc_type,
             status: body.status,
@@ -41,11 +47,24 @@ export async function POST(request: NextRequest) {
             name: body.name.trim(),
             agency_id: body.agency_id || null,
             handler_name: body.handler_name || null,
+            // ─── Hình thức xử lý mới ───
+            doc_category: body.doc_category,
+            count_tt_thay_the: Number(body.count_tt_thay_the) || 0,
+            count_tt_bai_bo: Number(body.count_tt_bai_bo) || 0,
+            count_tt_khong_xu_ly: Number(body.count_tt_khong_xu_ly) || 0,
+            count_tt_het_hieu_luc: Number(body.count_tt_het_hieu_luc) || 0,
+            count_vm_ban_hanh_moi: Number(body.count_vm_ban_hanh_moi) || 0,
+            count_vm_sua_doi_bo_sung: Number(body.count_vm_sua_doi_bo_sung) || 0,
+            count_vm_thay_the: Number(body.count_vm_thay_the) || 0,
+            count_vm_bai_bo: Number(body.count_vm_bai_bo) || 0,
+            needs_review: body.needs_review ?? false,
+            // Legacy columns (giữ lại backward compat)
             processing_form: body.processing_form || null,
             count_thay_the: Number(body.count_thay_the) || 0,
             count_bai_bo: Number(body.count_bai_bo) || 0,
             count_ban_hanh_moi: Number(body.count_ban_hanh_moi) || 0,
             count_chua_xac_dinh: Number(body.count_chua_xac_dinh) || 0,
+            // Workflow
             reg_doc_agency: body.reg_doc_agency || null,
             reg_doc_reply: body.reg_doc_reply || null,
             reg_doc_ubnd: body.reg_doc_ubnd || null,
@@ -113,11 +132,24 @@ export async function PUT(request: NextRequest) {
             name: body.name.trim(),
             agency_id: body.agency_id || null,
             handler_name: body.handler_name || null,
+            // ─── Hình thức xử lý mới ───
+            doc_category: body.doc_category || 'van_ban_tiep_tuc',
+            count_tt_thay_the: Number(body.count_tt_thay_the) || 0,
+            count_tt_bai_bo: Number(body.count_tt_bai_bo) || 0,
+            count_tt_khong_xu_ly: Number(body.count_tt_khong_xu_ly) || 0,
+            count_tt_het_hieu_luc: Number(body.count_tt_het_hieu_luc) || 0,
+            count_vm_ban_hanh_moi: Number(body.count_vm_ban_hanh_moi) || 0,
+            count_vm_sua_doi_bo_sung: Number(body.count_vm_sua_doi_bo_sung) || 0,
+            count_vm_thay_the: Number(body.count_vm_thay_the) || 0,
+            count_vm_bai_bo: Number(body.count_vm_bai_bo) || 0,
+            needs_review: body.needs_review ?? false,
+            // Legacy
             processing_form: body.processing_form || null,
             count_thay_the: Number(body.count_thay_the) || 0,
             count_bai_bo: Number(body.count_bai_bo) || 0,
             count_ban_hanh_moi: Number(body.count_ban_hanh_moi) || 0,
             count_chua_xac_dinh: Number(body.count_chua_xac_dinh) || 0,
+            // Workflow
             reg_doc_agency: body.reg_doc_agency || null,
             reg_doc_reply: body.reg_doc_reply || null,
             reg_doc_ubnd: body.reg_doc_ubnd || null,
@@ -197,7 +229,7 @@ export async function DELETE(request: NextRequest) {
             )
         }
 
-        // Reorder STT: lấy tất cả documents còn lại, sắp xếp theo stt cũ rồi gán lại 1, 2, 3...
+        // Reorder STT
         const { data: remaining } = await supabase
             .from('documents')
             .select('id, stt')
@@ -211,7 +243,6 @@ export async function DELETE(request: NextRequest) {
                 stt: idx + 1,
             }))
 
-            // Batch update STT
             for (const u of updates) {
                 await supabase
                     .from('documents')

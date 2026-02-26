@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Save, Loader2, FileText, Pencil } from 'lucide-react'
-import { Document, DocType, Status, Agency, Handler } from '@/lib/types'
+import { X, Save, Loader2, FileText, Pencil, AlertTriangle } from 'lucide-react'
+import { Document, DocType, Status, DocCategory, Agency, Handler, CATEGORY_FIELDS, DOC_CATEGORY_LABELS } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useToast } from './Toast'
 
@@ -23,14 +23,6 @@ interface FieldDef {
     type?: 'text' | 'number' | 'textarea'
     placeholder?: string
 }
-
-const COUNT_FIELDS: FieldDef[] = [
-    { key: 'count_thay_the', label: 'Thay thế', type: 'number', placeholder: '0' },
-    { key: 'count_bai_bo', label: 'Bãi bỏ', type: 'number', placeholder: '0' },
-    { key: 'count_ban_hanh_moi', label: 'Ban hành mới', type: 'number', placeholder: '0' },
-    { key: 'count_chua_xac_dinh', label: 'Chưa xác định', type: 'number', placeholder: '0' },
-
-]
 
 // Workflow fields cho NQ
 const WORKFLOW_NQ_CAN: FieldDef[] = [
@@ -90,8 +82,12 @@ const DOC_TYPE_NAMES: Record<DocType, string> = {
 // Các trường sẽ được load từ document khi edit
 const EDITABLE_KEYS = [
     'stt', 'name', 'agency_id', 'handler_name',
-    'count_thay_the', 'count_bai_bo', 'count_ban_hanh_moi',
-    'count_chua_xac_dinh',
+    'doc_category',
+    'count_tt_thay_the', 'count_tt_bai_bo', 'count_tt_khong_xu_ly', 'count_tt_het_hieu_luc',
+    'count_vm_ban_hanh_moi', 'count_vm_sua_doi_bo_sung', 'count_vm_thay_the', 'count_vm_bai_bo',
+    'needs_review',
+    // Legacy (backward compat)
+    'count_thay_the', 'count_bai_bo', 'count_ban_hanh_moi', 'count_chua_xac_dinh',
     'reg_doc_agency', 'reg_doc_reply', 'reg_doc_ubnd', 'approval_hdnd',
     'expected_date', 'feedback_sent', 'feedback_reply',
     'appraisal_sent', 'appraisal_reply',
@@ -103,12 +99,20 @@ const EDITABLE_KEYS = [
 export default function AddDocumentModal({ open, onClose, onSuccess, docType, status, editDoc }: Props) {
     const toast = useToast()
     const [saving, setSaving] = useState(false)
-    const [form, setForm] = useState<Record<string, string | number>>({})
+    const [form, setForm] = useState<Record<string, string | number | boolean>>({})
     const [agencies, setAgencies] = useState<Agency[]>([])
     const [handlersList, setHandlersList] = useState<Handler[]>([])
+    const [categoryError, setCategoryError] = useState(false)
 
     const isEdit = !!editDoc
     const workflowFields = getWorkflowFields(docType, status)
+
+    // Lấy doc_category từ form
+    const selectedCategory = form.doc_category as DocCategory | undefined
+    const categoryFields = selectedCategory ? CATEGORY_FIELDS[selectedCategory] : []
+
+    // Kiểm tra needs_review
+    const needsReview = isEdit && editDoc?.needs_review === true
 
     // Fetch agencies
     useEffect(() => {
@@ -128,7 +132,7 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
     useEffect(() => {
         if (!open) return
         if (editDoc) {
-            const loaded: Record<string, string | number> = {}
+            const loaded: Record<string, string | number | boolean> = {}
             for (const key of EDITABLE_KEYS) {
                 const val = (editDoc as any)[key]
                 if (val !== null && val !== undefined) {
@@ -139,6 +143,7 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
         } else {
             setForm({})
         }
+        setCategoryError(false)
     }, [open, editDoc])
 
     // Prevent body scroll
@@ -149,24 +154,55 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
         }
     }, [open])
 
-    function updateField(key: string, value: string | number) {
+    function updateField(key: string, value: string | number | boolean) {
         setForm(prev => ({ ...prev, [key]: value }))
+        if (key === 'doc_category') setCategoryError(false)
+    }
+
+    function selectCategory(cat: DocCategory) {
+        // Khi chuyển nhóm, xóa giá trị count của nhóm kia
+        const otherCat = cat === 'van_ban_tiep_tuc' ? 'van_ban_moi' : 'van_ban_tiep_tuc'
+        const newForm: Record<string, string | number | boolean> = { ...form, doc_category: cat }
+        // Reset các count của nhóm cũ
+        for (const f of CATEGORY_FIELDS[otherCat]) {
+            newForm[f.key] = 0
+        }
+        setForm(newForm)
+        setCategoryError(false)
     }
 
     async function handleSubmit() {
-        // Validation
+        // Validation tên VB
         if (!form.name || String(form.name).trim() === '') {
             toast.warning('Vui lòng nhập tên văn bản')
             return
         }
 
+        // Validation nhóm hình thức xử lý
+        if (!form.doc_category) {
+            setCategoryError(true)
+            toast.error('Vui lòng chọn nhóm hình thức xử lý (Văn bản tiếp tục áp dụng hoặc Văn bản mới)')
+            return
+        }
+
+        // Validation ít nhất 1 thuộc tính > 0
+        const cat = form.doc_category as DocCategory
+        const fields = CATEGORY_FIELDS[cat]
+        const totalCount = fields.reduce((sum, f) => sum + (Number(form[f.key]) || 0), 0)
+        if (totalCount === 0) {
+            toast.error('Vui lòng nhập số lượng văn bản cho ít nhất một hình thức xử lý')
+            return
+        }
+
         setSaving(true)
         try {
-            const payload = {
+            const payload: Record<string, any> = {
                 ...form,
                 doc_type: docType,
                 status,
                 year: 2026,
+                // Khi lưu thành công → bỏ flag needs_review
+                needs_review: false,
             }
 
             let res: Response
@@ -244,6 +280,16 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                     </button>
                 </div>
 
+                {/* Banner needs_review */}
+                {needsReview && (
+                    <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                        <p className="text-sm text-amber-800 font-medium">
+                            Văn bản này cần được rà soát lại hình thức xử lý. Vui lòng chọn nhóm và nhập số lượng phù hợp.
+                        </p>
+                    </div>
+                )}
+
                 {/* Body – scrollable */}
                 <div className="flex-1 overflow-y-auto p-6">
                     <div className="max-w-4xl mx-auto space-y-8">
@@ -266,7 +312,7 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                                 <div>
                                     <label className="block text-sm font-medium text-slate-600 mb-1.5">Cơ quan soạn thảo</label>
                                     <select
-                                        value={form.agency_id ?? ''}
+                                        value={form.agency_id as string ?? ''}
                                         onChange={e => updateField('agency_id', e.target.value)}
                                         className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-50/50 hover:bg-white transition-colors"
                                     >
@@ -285,7 +331,7 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                                     <textarea
                                         rows={3}
                                         placeholder="Nhập tên văn bản..."
-                                        value={form.name ?? ''}
+                                        value={form.name as string ?? ''}
                                         onChange={e => updateField('name', e.target.value)}
                                         className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-50/50 hover:bg-white transition-colors resize-none"
                                     />
@@ -295,7 +341,7 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                                 <div>
                                     <label className="block text-sm font-medium text-slate-600 mb-1.5">Người xử lý</label>
                                     <select
-                                        value={form.handler_name ?? ''}
+                                        value={form.handler_name as string ?? ''}
                                         onChange={e => updateField('handler_name', e.target.value)}
                                         className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-50/50 hover:bg-white transition-colors"
                                     >
@@ -311,27 +357,99 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                             </div>
                         </section>
 
-                        {/* Section: Hình thức xử lý */}
+                        {/* ═══ Section: Hình thức xử lý (MỚI) ═══ */}
                         <section>
                             <h3 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                <span className="w-1.5 h-5 bg-emerald-500 rounded-full" />
-                                Hình thức xử lý (số lượng VB)
+                                <span className={cn(
+                                    'w-1.5 h-5 rounded-full',
+                                    needsReview ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'
+                                )} />
+                                Hình thức xử lý <span className="text-red-500">*</span>
+                                {needsReview && (
+                                    <span className="ml-2 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                                        Cần rà soát
+                                    </span>
+                                )}
                             </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                                {COUNT_FIELDS.map(f => (
-                                    <div key={f.key}>
-                                        <label className="block text-xs font-medium text-slate-500 mb-1">{f.label}</label>
-                                        <input
-                                            type="number"
-                                            min={0}
-                                            placeholder="0"
-                                            value={form[f.key] ?? ''}
-                                            onChange={e => updateField(f.key, Number(e.target.value))}
-                                            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-slate-50/50 hover:bg-white transition-colors text-center"
-                                        />
-                                    </div>
-                                ))}
+
+                            {/* Radio buttons chọn nhóm */}
+                            <div className={cn(
+                                'grid grid-cols-1 md:grid-cols-2 gap-3 mb-5',
+                                categoryError && 'animate-shake',
+                            )}>
+                                {(['van_ban_tiep_tuc', 'van_ban_moi'] as DocCategory[]).map(cat => {
+                                    const isSelected = selectedCategory === cat
+                                    return (
+                                        <button
+                                            key={cat}
+                                            type="button"
+                                            onClick={() => selectCategory(cat)}
+                                            className={cn(
+                                                'flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 text-left transition-all',
+                                                isSelected
+                                                    ? 'border-emerald-500 bg-emerald-50 shadow-sm shadow-emerald-100'
+                                                    : categoryError
+                                                        ? 'border-red-300 bg-red-50/30 hover:border-red-400'
+                                                        : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/30',
+                                            )}
+                                        >
+                                            {/* Radio circle */}
+                                            <div className={cn(
+                                                'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
+                                                isSelected ? 'border-emerald-500' : categoryError ? 'border-red-300' : 'border-slate-300',
+                                            )}>
+                                                {isSelected && (
+                                                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className={cn(
+                                                    'font-semibold text-sm',
+                                                    isSelected ? 'text-emerald-800' : 'text-slate-700',
+                                                )}>
+                                                    {DOC_CATEGORY_LABELS[cat]}
+                                                </p>
+                                                <p className="text-xs text-slate-400 mt-0.5">
+                                                    {cat === 'van_ban_tiep_tuc'
+                                                        ? 'Thay thế, Bãi bỏ, Không xử lý, Hết hiệu lực'
+                                                        : 'Ban hành mới, Sửa đổi bổ sung, Thay thế, Bãi bỏ'
+                                                    }
+                                                </p>
+                                            </div>
+                                        </button>
+                                    )
+                                })}
                             </div>
+
+                            {categoryError && (
+                                <p className="text-xs text-red-500 font-medium mb-3 -mt-3">
+                                    ⚠ Vui lòng chọn một trong hai nhóm trên
+                                </p>
+                            )}
+
+                            {/* Các ô nhập số lượng (hiện khi đã chọn nhóm) */}
+                            {selectedCategory && (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-fadeIn">
+                                    {categoryFields.map(f => (
+                                        <div key={f.key}>
+                                            <label className="block text-xs font-medium text-slate-500 mb-1">{f.label}</label>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                placeholder="0"
+                                                value={form[f.key] as number ?? ''}
+                                                onChange={e => updateField(f.key, Number(e.target.value))}
+                                                className={cn(
+                                                    'w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-colors text-center',
+                                                    needsReview
+                                                        ? 'border-amber-300 bg-amber-50/50 hover:bg-white focus:ring-amber-400'
+                                                        : 'border-slate-200 bg-slate-50/50 hover:bg-white focus:ring-emerald-400',
+                                                )}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </section>
 
                         {/* Section: Quy trình */}
@@ -348,7 +466,7 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                                             <textarea
                                                 rows={2}
                                                 placeholder={f.placeholder}
-                                                value={form[f.key] ?? ''}
+                                                value={form[f.key] as string ?? ''}
                                                 onChange={e => updateField(f.key, e.target.value)}
                                                 className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-slate-50/50 hover:bg-white transition-colors resize-none"
                                             />
@@ -356,7 +474,7 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                                             <input
                                                 type={f.type ?? 'text'}
                                                 placeholder={f.placeholder}
-                                                value={form[f.key] ?? ''}
+                                                value={form[f.key] as string ?? ''}
                                                 onChange={e => updateField(f.key, f.type === 'number' ? Number(e.target.value) : e.target.value)}
                                                 className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-slate-50/50 hover:bg-white transition-colors"
                                             />
@@ -413,11 +531,19 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                     from { opacity: 0; transform: scale(0.98) translateY(20px); }
                     to { opacity: 1; transform: scale(1) translateY(0); }
                 }
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-6px); }
+                    75% { transform: translateX(6px); }
+                }
                 .animate-fadeIn {
                     animation: fadeIn 0.2s ease-out;
                 }
                 .animate-slideUp {
                     animation: slideUp 0.3s ease-out;
+                }
+                .animate-shake {
+                    animation: shake 0.3s ease-out;
                 }
             `}</style>
         </div>

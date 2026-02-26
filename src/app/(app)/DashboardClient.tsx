@@ -3,26 +3,37 @@
 import { useState, useEffect } from 'react'
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend,
+    Legend,
 } from 'recharts'
 import { FileText, CheckSquare, Layers, TrendingUp, RefreshCw } from 'lucide-react'
 import { DocType } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 
 interface DocData {
     id: string
     doc_type: DocType
     status: string
     handler_name: string | null
-    processing_form: string | null
+    agency_name: string | null
+    // New columns
+    doc_category: string
+    count_tt_thay_the: number
+    count_tt_bai_bo: number
+    count_tt_khong_xu_ly: number
+    count_tt_het_hieu_luc: number
+    count_vm_ban_hanh_moi: number
+    count_vm_sua_doi_bo_sung: number
+    count_vm_thay_the: number
+    count_vm_bai_bo: number
+    // Legacy
     count_thay_the: number
     count_bai_bo: number
     count_ban_hanh_moi: number
     count_chua_xac_dinh: number
-    agency_name: string | null
 }
 
-const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#6b7280']
+const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#6b7280', '#14b8a6', '#ec4899']
 
 // =====================================================
 // MAPPING: Agency → Lĩnh vực (theo sheet "Tong Hop Chung")
@@ -99,13 +110,27 @@ function computeLinhVucTable(
         const canXuLy = matchDocs.filter(d => d.status === 'can_xu_ly').length
         const daXuLyDocs = matchDocs.filter(d => d.status === 'da_xu_ly')
 
-        const baiBo = daXuLyDocs.reduce((sum, d) =>
-            sum + (Number(d.count_bai_bo) || 0)
-            , 0)
+        // Tính "Bãi bỏ / Không xử lý": nhóm VB tiếp tục (bãi bỏ + không XL + hết hiệu lực)
+        const baiBo = daXuLyDocs.reduce((sum, d) => {
+            const newVal = (Number(d.count_tt_bai_bo) || 0)
+                + (Number(d.count_tt_khong_xu_ly) || 0)
+                + (Number(d.count_tt_het_hieu_luc) || 0)
+                + (Number(d.count_vm_bai_bo) || 0)
+            // Fallback to legacy
+            const legacyVal = (Number(d.count_bai_bo) || 0)
+            return sum + (newVal > 0 ? newVal : legacyVal)
+        }, 0)
 
-        const banHanh = daXuLyDocs.reduce((sum, d) =>
-            sum + (Number(d.count_ban_hanh_moi) || 0) + (Number(d.count_thay_the) || 0)
-            , 0)
+        // Tính "Ban hành mới, thay thế": nhóm VB mới (ban hành mới + sửa đổi BS + thay thế) + nhóm VB tiếp tục (thay thế)
+        const banHanh = daXuLyDocs.reduce((sum, d) => {
+            const newVal = (Number(d.count_tt_thay_the) || 0)
+                + (Number(d.count_vm_ban_hanh_moi) || 0)
+                + (Number(d.count_vm_sua_doi_bo_sung) || 0)
+                + (Number(d.count_vm_thay_the) || 0)
+            // Fallback to legacy
+            const legacyVal = (Number(d.count_ban_hanh_moi) || 0) + (Number(d.count_thay_the) || 0)
+            return sum + (newVal > 0 ? newVal : legacyVal)
+        }, 0)
 
         return {
             tt: lv.tt,
@@ -132,7 +157,7 @@ export default function DashboardClient() {
         try {
             const { data: rawDocs } = await supabase
                 .from('documents')
-                .select('id, doc_type, status, handler_name, processing_form, agency_id, count_thay_the, count_bai_bo, count_ban_hanh_moi, count_chua_xac_dinh')
+                .select('id, doc_type, status, handler_name, agency_id, doc_category, count_tt_thay_the, count_tt_bai_bo, count_tt_khong_xu_ly, count_tt_het_hieu_luc, count_vm_ban_hanh_moi, count_vm_sua_doi_bo_sung, count_vm_thay_the, count_vm_bai_bo, count_thay_the, count_bai_bo, count_ban_hanh_moi, count_chua_xac_dinh')
 
             const { data: rawAgencies } = await supabase
                 .from('agencies')
@@ -181,14 +206,20 @@ export default function DashboardClient() {
     const total = totalCanXuLy + totalDaXuLy
     const progressPct = total > 0 ? Math.round((totalDaXuLy / total) * 100) : 0
 
-    // Pie chart: hình thức xử lý cho tất cả
+    // Thống kê hình thức xử lý theo 2 nhóm
     const sumField = (arr: DocData[], field: keyof DocData) => arr.reduce((acc, d) => acc + (Number(d[field]) || 0), 0)
-    const pieData = [
-        { name: 'Thay thế', value: sumField(docs, 'count_thay_the') },
-        { name: 'Bãi bỏ', value: sumField(docs, 'count_bai_bo') },
-        { name: 'Ban hành mới', value: sumField(docs, 'count_ban_hanh_moi') },
-        { name: 'Chưa xác định', value: sumField(docs, 'count_chua_xac_dinh') },
-    ].filter(d => d.value > 0)
+
+    const ttThayThe = sumField(docs, 'count_tt_thay_the')
+    const ttBaiBo = sumField(docs, 'count_tt_bai_bo')
+    const ttKhongXuLy = sumField(docs, 'count_tt_khong_xu_ly')
+    const ttHetHieuLuc = sumField(docs, 'count_tt_het_hieu_luc')
+    const ttTotal = ttThayThe + ttBaiBo + ttKhongXuLy + ttHetHieuLuc
+
+    const vmBanHanhMoi = sumField(docs, 'count_vm_ban_hanh_moi')
+    const vmSuaDoiBS = sumField(docs, 'count_vm_sua_doi_bo_sung')
+    const vmThayThe = sumField(docs, 'count_vm_thay_the')
+    const vmBaiBo = sumField(docs, 'count_vm_bai_bo')
+    const vmTotal = vmBanHanhMoi + vmSuaDoiBS + vmThayThe + vmBaiBo
 
     // Bar chart: theo chuyên viên
     const handlerMap: Record<string, { name: string; can_xu_ly: number; da_xu_ly: number }> = {}
@@ -277,6 +308,74 @@ export default function DashboardClient() {
                     })}
                 </div>
 
+                {/* ====== THỐNG KÊ HÌNH THỨC XỬ LÝ ====== */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Nhóm 1: Văn bản tiếp tục áp dụng */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden border-t-4 border-indigo-500">
+                        <div className="px-5 py-4 bg-indigo-50/60 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
+                                    <FileText className="w-4 h-4 text-white" />
+                                </div>
+                                <h2 className="font-bold text-base text-indigo-800">Văn bản tiếp tục áp dụng</h2>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-2xl font-bold text-indigo-700">{ttTotal}</p>
+                                <p className="text-[10px] text-indigo-400 uppercase tracking-wider font-semibold">Tổng cộng</p>
+                            </div>
+                        </div>
+                        <div className="p-5 space-y-3">
+                            <StatRow label="Thay thế" value={ttThayThe} total={ttTotal} color="bg-blue-500" />
+                            <StatRow label="Bãi bỏ" value={ttBaiBo} total={ttTotal} color="bg-red-500" />
+                            <StatRow label="Không xử lý" value={ttKhongXuLy} total={ttTotal} color="bg-slate-400" />
+                            <StatRow label="Hết hiệu lực theo thời gian" value={ttHetHieuLuc} total={ttTotal} color="bg-purple-500" />
+                        </div>
+                    </div>
+
+                    {/* Nhóm 2: Văn bản mới */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden border-t-4 border-emerald-500">
+                        <div className="px-5 py-4 bg-emerald-50/60 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                                    <Layers className="w-4 h-4 text-white" />
+                                </div>
+                                <h2 className="font-bold text-base text-emerald-800">Văn bản mới</h2>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-2xl font-bold text-emerald-700">{vmTotal}</p>
+                                <p className="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold">Tổng cộng</p>
+                            </div>
+                        </div>
+                        <div className="p-5 space-y-3">
+                            <StatRow label="Ban hành mới" value={vmBanHanhMoi} total={vmTotal} color="bg-green-500" />
+                            <StatRow label="Sửa đổi bổ sung" value={vmSuaDoiBS} total={vmTotal} color="bg-teal-500" />
+                            <StatRow label="Thay thế" value={vmThayThe} total={vmTotal} color="bg-blue-500" />
+                            <StatRow label="Bãi bỏ" value={vmBaiBo} total={vmTotal} color="bg-red-500" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* ====== BAR CHART: Chuyên viên ====== */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+                    <h2 className="font-semibold text-slate-700 mb-4">Tiến Độ Theo Chuyên Viên</h2>
+                    {handlerBarData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={280}>
+                            <BarChart data={handlerBarData} margin={{ top: 0, right: 10, left: -10, bottom: 0 }}>
+                                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                                <YAxis tick={{ fontSize: 12 }} />
+                                <Tooltip />
+                                <Legend iconType="circle" iconSize={8} />
+                                <Bar dataKey="can_xu_ly" name="Cần xử lý" fill="#f97316" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="da_xu_ly" name="Đã xử lý" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-[280px] flex items-center justify-center text-slate-400 text-sm">
+                            Chưa có dữ liệu
+                        </div>
+                    )}
+                </div>
+
                 {/* ====== TABLE 1: NQ HĐND ====== */}
                 <SummaryTable
                     title="1. Đối với 243 Nghị quyết của Hội đồng nhân dân tỉnh"
@@ -297,53 +396,29 @@ export default function DashboardClient() {
                     accentColor="emerald"
                 />
 
-                {/* Charts Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Pie Chart */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-                        <h2 className="font-semibold text-slate-700 mb-4">Hình Thức Xử Lý (Tổng hợp)</h2>
-                        {pieData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={260}>
-                                <PieChart>
-                                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90}
-                                        dataKey="value" paddingAngle={2}>
-                                        {pieData.map((_, i) => (
-                                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip formatter={(v) => [`${v} VB`, '']} />
-                                    <Legend iconType="circle" iconSize={8} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="h-[260px] flex items-center justify-center text-slate-400 text-sm">
-                                Chưa có dữ liệu
-                            </div>
-                        )}
-                    </div>
 
-                    {/* Bar Chart */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-                        <h2 className="font-semibold text-slate-700 mb-4">Tiến Độ Theo Chuyên Viên</h2>
-                        {handlerBarData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={260}>
-                                <BarChart data={handlerBarData} margin={{ top: 0, right: 10, left: -10, bottom: 0 }}>
-                                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                                    <YAxis tick={{ fontSize: 12 }} />
-                                    <Tooltip />
-                                    <Legend iconType="circle" iconSize={8} />
-                                    <Bar dataKey="can_xu_ly" name="Cần xử lý" fill="#f97316" radius={[4, 4, 0, 0]} />
-                                    <Bar dataKey="da_xu_ly" name="Đã xử lý" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="h-[260px] flex items-center justify-center text-slate-400 text-sm">
-                                Chưa có dữ liệu
-                            </div>
-                        )}
-                    </div>
-                </div>
             </div>
+        </div>
+    )
+}
+
+// =====================================================
+// SUB-COMPONENT: StatRow (progress bar cho thống kê)
+// =====================================================
+function StatRow({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
+    const pct = total > 0 ? Math.round((value / total) * 100) : 0
+    return (
+        <div className="flex items-center gap-3">
+            <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', color)} />
+            <span className="text-sm text-slate-600 w-48 shrink-0">{label}</span>
+            <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                    className={cn('h-full rounded-full transition-all duration-500', color)}
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
+            <span className="text-sm font-bold text-slate-800 w-10 text-right">{value}</span>
+            <span className="text-[10px] text-slate-400 w-10 text-right">{pct}%</span>
         </div>
     )
 }
