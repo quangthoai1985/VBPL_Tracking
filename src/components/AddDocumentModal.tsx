@@ -520,54 +520,6 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                                 Quy trình xử lý
                             </h3>
 
-                            {/* ═══ Radio chọn loại quy trình ═══ */}
-                            <div className="mb-5">
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Loại quy trình <span className="text-slate-400 font-normal text-xs">(sau bước phê duyệt)</span>
-                                </label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {(['thuong', 'rut_gon'] as ProcedureType[]).map(pt => {
-                                        const isSelected = form.procedure_type === pt
-                                        return (
-                                            <button
-                                                key={pt}
-                                                type="button"
-                                                onClick={() => updateField('procedure_type', pt)}
-                                                className={cn(
-                                                    'flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all',
-                                                    isSelected
-                                                        ? pt === 'thuong'
-                                                            ? 'border-blue-500 bg-blue-50 shadow-sm shadow-blue-100'
-                                                            : 'border-orange-500 bg-orange-50 shadow-sm shadow-orange-100'
-                                                        : 'border-slate-200 bg-white hover:border-slate-300',
-                                                )}
-                                            >
-                                                <div className={cn(
-                                                    'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
-                                                    isSelected
-                                                        ? pt === 'thuong' ? 'border-blue-500' : 'border-orange-500'
-                                                        : 'border-slate-300',
-                                                )}>
-                                                    {isSelected && (
-                                                        <div className={cn('w-2.5 h-2.5 rounded-full', pt === 'thuong' ? 'bg-blue-500' : 'bg-orange-500')} />
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <p className={cn('font-semibold text-sm', isSelected ? (pt === 'thuong' ? 'text-blue-800' : 'text-orange-800') : 'text-slate-700')}>
-                                                        {PROCEDURE_TYPE_LABELS[pt]}
-                                                    </p>
-                                                    <p className="text-[11px] text-slate-400 mt-0.5">
-                                                        {pt === 'thuong'
-                                                            ? 'Góp ý: 10 ngày · Thẩm định: 15 ngày'
-                                                            : 'Góp ý: 3 ngày · Thẩm định: 7 ngày'
-                                                        }
-                                                    </p>
-                                                </div>
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            </div>
 
                             {/* ═══ FORM QUY TRÌNH — SẮP XẾP THEO THỨ TỰ CỘT DocumentsPage ═══ */}
                             {(() => {
@@ -699,7 +651,7 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                                                 <h4 className="text-sm font-bold flex items-center gap-1.5 text-slate-600 mb-3">
                                                     📎 Đề xuất
                                                 </h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                                                     {beforeFields.map(f => (
                                                         <div key={f.key}>
                                                             <label className="block text-xs font-medium text-slate-500 mb-1">{f.label}</label>
@@ -721,6 +673,56 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                                                         </div>
                                                     )}
                                                 </div>
+
+                                                {/* ═══ Radio chọn loại quy trình chuyển vào đây ═══ */}
+                                                <div>
+                                                    <label className="block text-xs font-medium text-slate-500 mb-2">
+                                                        Loại quy trình <span className="text-slate-400 font-normal text-[10px]">(sau bước phê duyệt)</span>
+                                                    </label>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        {(['thuong', 'rut_gon'] as ProcedureType[]).map(pt => {
+                                                            const isSelected = form.procedure_type === pt
+                                                            return (
+                                                                <button
+                                                                    key={pt}
+                                                                    type="button"
+                                                                    onClick={() => updateField('procedure_type', pt)}
+                                                                    className={cn(
+                                                                        'flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all',
+                                                                        isSelected
+                                                                            ? pt === 'thuong'
+                                                                                ? 'border-blue-500 bg-blue-50 shadow-sm shadow-blue-100'
+                                                                                : 'border-orange-500 bg-orange-50 shadow-sm shadow-orange-100'
+                                                                            : 'border-slate-200 bg-white hover:border-slate-300',
+                                                                    )}
+                                                                >
+                                                                    <div className={cn(
+                                                                        'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
+                                                                        isSelected
+                                                                            ? pt === 'thuong' ? 'border-blue-500' : 'border-orange-500'
+                                                                            : 'border-slate-300',
+                                                                    )}>
+                                                                        {isSelected && (
+                                                                            <div className={cn('w-2.5 h-2.5 rounded-full', pt === 'thuong' ? 'bg-blue-500' : 'bg-orange-500')} />
+                                                                        )}
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className={cn('font-semibold text-sm', isSelected ? (pt === 'thuong' ? 'text-blue-800' : 'text-orange-800') : 'text-slate-700')}>
+                                                                            {PROCEDURE_TYPE_LABELS[pt]}
+                                                                        </p>
+                                                                        <p className="text-[11px] text-slate-400 mt-0.5">
+                                                                            {pt === 'thuong'
+                                                                                ? 'Góp ý: 10 ngày · Thẩm định: 15 ngày'
+                                                                                : 'Góp ý: 3 ngày · Thẩm định: 7 ngày'
+                                                                            }
+                                                                        </p>
+                                                                    </div>
+                                                                </button>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+
                                             </div>
                                         )}
 
