@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, Save, Loader2, FileText, Pencil, AlertTriangle } from 'lucide-react'
-import { Document, DocType, Status, DocCategory, Agency, Handler, CATEGORY_FIELDS, DOC_CATEGORY_LABELS } from '@/lib/types'
+import { Document, DocType, Status, DocCategory, ProcedureType, Agency, Handler, CATEGORY_FIELDS, DOC_CATEGORY_LABELS, PROCEDURE_TYPE_LABELS, DEADLINE_DAYS, REG_DOC_DEADLINE_DAYS } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useToast } from './Toast'
 
@@ -20,21 +20,83 @@ interface Props {
 interface FieldDef {
     key: string
     label: string
-    type?: 'text' | 'number' | 'textarea'
+    type?: 'text' | 'number' | 'textarea' | 'date'
     placeholder?: string
 }
 
-// Workflow fields cho NQ
+// ═══ Các trường date-pair sẽ render trong khung viền riêng ═══
+const DEADLINE_DATE_KEYS = new Set([
+    'feedback_sent', 'feedback_sent_date', 'feedback_reply', 'feedback_reply_date',
+    'appraisal_sent', 'appraisal_sent_date', 'appraisal_reply', 'appraisal_reply_date',
+])
+
+// Cấu hình 2 nhóm deadline: Góp ý + Thẩm định
+interface DeadlineGroup {
+    title: string
+    icon: string
+    color: string // tailwind color prefix
+    textKey: string   // VB gửi
+    dateKey: string   // Ngày gửi
+    replyTextKey: string  // VB phúc đáp
+    replyDateKey: string  // Ngày phúc đáp
+    deadlineType: 'registration' | 'feedback' | 'appraisal'
+    fixedDeadlineDays?: number  // dùng khi deadline cố định (không phụ thuộc procedure_type)
+}
+
+function getDeadlineGroups(docType: DocType): DeadlineGroup[] {
+    return [
+        {
+            title: 'Đăng ký xây dựng',
+            icon: '📝',
+            color: 'teal',
+            textKey: 'reg_doc_agency',
+            dateKey: 'reg_doc_agency_date',
+            replyTextKey: 'reg_doc_reply',
+            replyDateKey: 'reg_doc_reply_date',
+            deadlineType: 'registration',
+            fixedDeadlineDays: REG_DOC_DEADLINE_DAYS,
+        },
+        {
+            title: 'Góp ý',
+            icon: '💬',
+            color: 'indigo',
+            textKey: 'feedback_sent',
+            dateKey: 'feedback_sent_date',
+            replyTextKey: 'feedback_reply',
+            replyDateKey: 'feedback_reply_date',
+            deadlineType: 'feedback',
+        },
+        {
+            title: 'Thẩm định',
+            icon: '📋',
+            color: 'violet',
+            textKey: 'appraisal_sent',
+            dateKey: 'appraisal_sent_date',
+            replyTextKey: 'appraisal_reply',
+            replyDateKey: 'appraisal_reply_date',
+            deadlineType: 'appraisal',
+        },
+    ]
+}
+
+// Lấy label phù hợp theo docType
+function getFieldLabel(key: string, docType: DocType): string {
+    const labels: Record<string, Record<string, string>> = {
+        reg_doc_agency: { NQ: 'VB đăng ký XD NQ (cơ quan ST)', QD_UBND: 'VB đăng ký xây dựng', QD_CT_UBND: 'VB đăng ký xây dựng' },
+        feedback_sent: { NQ: 'Gửi lấy ý kiến góp ý', QD_UBND: 'VB lấy ý kiến góp ý', QD_CT_UBND: 'VB lấy ý kiến góp ý' },
+        appraisal_sent: { NQ: 'Gửi Sở TP thẩm định', QD_UBND: 'VB gửi Sở TP thẩm định', QD_CT_UBND: 'VB gửi Sở TP thẩm định' },
+    }
+    return labels[key]?.[docType] ?? key
+}
+
+// Workflow fields cho NQ — đã loại 8 trường date-pair
 const WORKFLOW_NQ_CAN: FieldDef[] = [
-    { key: 'reg_doc_agency', label: 'VB đăng ký XD NQ (cơ quan ST)', placeholder: 'Nhập...' },
-    { key: 'reg_doc_reply', label: 'Phúc đáp', placeholder: 'Nhập...' },
+    // reg_doc_agency + reg_doc_reply → render trong khung viền Đăng ký
     { key: 'reg_doc_ubnd', label: 'VB đăng ký XD NQ (UBND tỉnh)', placeholder: 'Nhập...' },
     { key: 'approval_hdnd', label: 'Ý kiến TT.HĐND tỉnh', placeholder: 'Nhập...' },
+    // procedure_type + deadline groups render riêng
     { key: 'expected_date', label: 'Dự kiến trình', placeholder: 'VD: Tháng 6/2026' },
-    { key: 'feedback_sent', label: 'Gửi lấy ý kiến góp ý', placeholder: 'Nhập...' },
-    { key: 'feedback_reply', label: 'Phúc đáp ý kiến', placeholder: 'Nhập...' },
-    { key: 'appraisal_sent', label: 'Gửi Sở TP thẩm định', placeholder: 'Nhập...' },
-    { key: 'appraisal_reply', label: 'Phúc đáp thẩm định', placeholder: 'Nhập...' },
+    // ← 8 trường feedback/appraisal sẽ render trong khung viền ↓
     { key: 'submitted_ubnd', label: 'Cơ quan trình UBND', placeholder: 'Nhập...' },
     { key: 'submitted_hdnd', label: 'UBND trình HĐND', placeholder: 'Nhập...' },
     { key: 'issuance_number', label: 'Số/Ngày ban hành VBQPPL', placeholder: 'VD: 15/2026/NQ-HĐND' },
@@ -47,14 +109,11 @@ const WORKFLOW_NQ_DA: FieldDef[] = [
 ]
 
 const WORKFLOW_QD_UBND_CAN: FieldDef[] = [
-    { key: 'reg_doc_agency', label: 'VB đăng ký xây dựng', placeholder: 'Nhập...' },
-    { key: 'reg_doc_reply', label: 'Phúc đáp', placeholder: 'Nhập...' },
+    // reg_doc_agency + reg_doc_reply → render trong khung viền Đăng ký
     { key: 'approval_hdnd', label: 'Chấp thuận của UBND tỉnh', placeholder: 'Nhập...' },
+    // procedure_type + deadline groups render riêng
     { key: 'expected_date', label: 'Dự kiến trình', placeholder: 'VD: Tháng 6/2026' },
-    { key: 'feedback_sent', label: 'VB lấy ý kiến góp ý', placeholder: 'Nhập...' },
-    { key: 'feedback_reply', label: 'Phúc đáp ý kiến', placeholder: 'Nhập...' },
-    { key: 'appraisal_sent', label: 'VB gửi Sở TP thẩm định', placeholder: 'Nhập...' },
-    { key: 'appraisal_reply', label: 'Phúc đáp thẩm định', placeholder: 'Nhập...' },
+    // ← 8 trường feedback/appraisal sẽ render trong khung viền ↓
     { key: 'submitted_vb', label: 'VB trình UBND ban hành', placeholder: 'Nhập...' },
     { key: 'issuance_number', label: 'Số/Ngày ban hành VBQPPL', placeholder: 'VD: 25/2026/QĐ-UBND' },
     { key: 'notes', label: 'Ghi chú', type: 'textarea', placeholder: 'Ghi chú thêm...' },
@@ -89,8 +148,10 @@ const EDITABLE_KEYS = [
     // Legacy (backward compat)
     'count_thay_the', 'count_bai_bo', 'count_ban_hanh_moi', 'count_chua_xac_dinh',
     'reg_doc_agency', 'reg_doc_reply', 'reg_doc_ubnd', 'approval_hdnd',
-    'expected_date', 'feedback_sent', 'feedback_reply',
-    'appraisal_sent', 'appraisal_reply',
+    'procedure_type',
+    'expected_date',
+    'feedback_sent', 'feedback_sent_date', 'feedback_reply', 'feedback_reply_date',
+    'appraisal_sent', 'appraisal_sent_date', 'appraisal_reply', 'appraisal_reply_date',
     'submitted_ubnd', 'submitted_hdnd', 'submitted_vb',
     'issuance_number', 'issuance_date', 'processing_time', 'notes',
 ]
@@ -458,30 +519,245 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                                 <span className="w-1.5 h-5 bg-amber-500 rounded-full" />
                                 Quy trình xử lý
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {workflowFields.map(f => (
-                                    <div key={f.key} className={f.type === 'textarea' ? 'md:col-span-2' : ''}>
-                                        <label className="block text-sm font-medium text-slate-600 mb-1.5">{f.label}</label>
-                                        {f.type === 'textarea' ? (
-                                            <textarea
-                                                rows={2}
-                                                placeholder={f.placeholder}
-                                                value={form[f.key] as string ?? ''}
-                                                onChange={e => updateField(f.key, e.target.value)}
-                                                className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-slate-50/50 hover:bg-white transition-colors resize-none"
-                                            />
-                                        ) : (
-                                            <input
-                                                type={f.type ?? 'text'}
-                                                placeholder={f.placeholder}
-                                                value={form[f.key] as string ?? ''}
-                                                onChange={e => updateField(f.key, f.type === 'number' ? Number(e.target.value) : e.target.value)}
-                                                className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-slate-50/50 hover:bg-white transition-colors"
-                                            />
+
+                            {/* ═══ Radio chọn loại quy trình ═══ */}
+                            <div className="mb-5">
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    Loại quy trình <span className="text-slate-400 font-normal text-xs">(sau bước phê duyệt)</span>
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {(['thuong', 'rut_gon'] as ProcedureType[]).map(pt => {
+                                        const isSelected = form.procedure_type === pt
+                                        return (
+                                            <button
+                                                key={pt}
+                                                type="button"
+                                                onClick={() => updateField('procedure_type', pt)}
+                                                className={cn(
+                                                    'flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all',
+                                                    isSelected
+                                                        ? pt === 'thuong'
+                                                            ? 'border-blue-500 bg-blue-50 shadow-sm shadow-blue-100'
+                                                            : 'border-orange-500 bg-orange-50 shadow-sm shadow-orange-100'
+                                                        : 'border-slate-200 bg-white hover:border-slate-300',
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
+                                                    isSelected
+                                                        ? pt === 'thuong' ? 'border-blue-500' : 'border-orange-500'
+                                                        : 'border-slate-300',
+                                                )}>
+                                                    {isSelected && (
+                                                        <div className={cn('w-2.5 h-2.5 rounded-full', pt === 'thuong' ? 'bg-blue-500' : 'bg-orange-500')} />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className={cn('font-semibold text-sm', isSelected ? (pt === 'thuong' ? 'text-blue-800' : 'text-orange-800') : 'text-slate-700')}>
+                                                        {PROCEDURE_TYPE_LABELS[pt]}
+                                                    </p>
+                                                    <p className="text-[11px] text-slate-400 mt-0.5">
+                                                        {pt === 'thuong'
+                                                            ? 'Góp ý: 10 ngày · Thẩm định: 15 ngày'
+                                                            : 'Góp ý: 3 ngày · Thẩm định: 7 ngày'
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* ═══ FORM QUY TRÌNH — SẮP XẾP THEO THỨ TỰ CỘT DocumentsPage ═══ */}
+                            {(() => {
+                                // Tách trường thành 2 nhóm: "đề xuất" (trước expected_date) và "trình ban hành" (sau)
+                                const idxExpected = workflowFields.findIndex(x => x.key === 'expected_date')
+                                const beforeFields = workflowFields.filter((_, i) => i < idxExpected)
+                                const expectedField = workflowFields.find(f => f.key === 'expected_date')
+                                const afterFields = workflowFields.filter((_, i) => i > idxExpected)
+
+                                const deadlineGroups = getDeadlineGroups(docType)
+                                // Chỉ lấy registration group riêng (render đầu tiên)
+                                const regGroup = deadlineGroups.find(g => g.deadlineType === 'registration')!
+                                // feedback + appraisal (render sau procedure)
+                                const otherGroups = deadlineGroups.filter(g => g.deadlineType !== 'registration')
+
+                                // colorMap cho tất cả khung viền
+                                const colorMap: Record<string, { border: string; bg: string; header: string; tag: string }> = {
+                                    teal: { border: 'border-teal-200', bg: 'bg-teal-50/30', header: 'text-teal-700', tag: 'bg-teal-100 text-teal-800' },
+                                    indigo: { border: 'border-indigo-200', bg: 'bg-indigo-50/30', header: 'text-indigo-700', tag: 'bg-indigo-100 text-indigo-800' },
+                                    violet: { border: 'border-violet-200', bg: 'bg-violet-50/30', header: 'text-violet-700', tag: 'bg-violet-100 text-violet-800' },
+                                    slate: { border: 'border-slate-200', bg: 'bg-slate-50/30', header: 'text-slate-600', tag: 'bg-slate-100 text-slate-700' },
+                                }
+
+                                // Helper: render 1 deadline group
+                                const renderDeadlineGroup = (group: DeadlineGroup) => {
+                                    const procType = form.procedure_type as ProcedureType | undefined
+                                    const dl = procType ? DEADLINE_DAYS[procType] : null
+                                    const maxDays = group.fixedDeadlineDays
+                                        ?? (dl ? (group.deadlineType === 'feedback' ? dl.feedback : dl.appraisal) : null)
+
+                                    let replyBadge: React.ReactNode = null
+                                    if (maxDays && form[group.dateKey]) {
+                                        const sentDate = new Date(form[group.dateKey] as string)
+                                        if (!isNaN(sentDate.getTime())) {
+                                            const deadline = new Date(sentDate)
+                                            deadline.setDate(deadline.getDate() + maxDays)
+                                            const deadlineStr = deadline.toLocaleDateString('vi-VN')
+                                            const replyDateVal = form[group.replyDateKey] as string | undefined
+
+                                            if (replyDateVal) {
+                                                const replyDate = new Date(replyDateVal)
+                                                const isLate = replyDate > deadline
+                                                replyBadge = (
+                                                    <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium', isLate ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700')}>
+                                                        {isLate ? `Trễ hạn (hạn: ${deadlineStr})` : `Đúng hạn ✓`}
+                                                    </span>
+                                                )
+                                            } else {
+                                                const today = new Date()
+                                                today.setHours(0, 0, 0, 0)
+                                                const daysLeft = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                                                if (daysLeft < 0) {
+                                                    replyBadge = <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-red-100 text-red-700">Quá hạn {Math.abs(daysLeft)} ngày!</span>
+                                                } else if (daysLeft <= 2) {
+                                                    replyBadge = <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-amber-100 text-amber-700">Còn {daysLeft} ngày (hạn: {deadlineStr})</span>
+                                                } else {
+                                                    replyBadge = <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-blue-50 text-blue-600">Hạn: {deadlineStr} ({daysLeft} ngày)</span>
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    const c = colorMap[group.color] ?? colorMap.violet
+                                    return (
+                                        <div key={group.deadlineType} className={cn('rounded-xl border-2 p-4', c.border, c.bg)}>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h4 className={cn('text-sm font-bold flex items-center gap-1.5', c.header)}>
+                                                    <span>{group.icon}</span> {group.title}
+                                                </h4>
+                                                {maxDays && (
+                                                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', c.tag)}>
+                                                        Tối đa {maxDays} ngày
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                                <div>
+                                                    <label className="block text-xs font-medium text-slate-500 mb-1">
+                                                        {getFieldLabel(group.textKey, docType)}
+                                                    </label>
+                                                    <input type="text" placeholder="Nhập..."
+                                                        value={form[group.textKey] as string ?? ''}
+                                                        onChange={e => updateField(group.textKey, e.target.value)}
+                                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white hover:bg-white transition-colors"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-medium text-slate-500 mb-1">📅 Ngày gửi</label>
+                                                    <input type="date"
+                                                        value={form[group.dateKey] as string ?? ''}
+                                                        onChange={e => updateField(group.dateKey, e.target.value)}
+                                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white hover:bg-white transition-colors"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-xs font-medium text-slate-500 mb-1">Phúc đáp</label>
+                                                    <input type="text" placeholder="Nhập..."
+                                                        value={form[group.replyTextKey] as string ?? ''}
+                                                        onChange={e => updateField(group.replyTextKey, e.target.value)}
+                                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white hover:bg-white transition-colors"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <label className="block text-xs font-medium text-slate-500">📅 Ngày phúc đáp</label>
+                                                        {replyBadge}
+                                                    </div>
+                                                    <input type="date"
+                                                        value={form[group.replyDateKey] as string ?? ''}
+                                                        onChange={e => updateField(group.replyDateKey, e.target.value)}
+                                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white hover:bg-white transition-colors"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                }
+
+                                return (
+                                    <div className="space-y-4">
+                                        {/* ① 📝 Đăng ký xây dựng (teal) — đầu tiên */}
+                                        {renderDeadlineGroup(regGroup)}
+
+                                        {/* ② 📎 Đề xuất — reg_doc_ubnd, approval_hdnd, dự kiến trình (khung slate) */}
+                                        {(beforeFields.length > 0 || expectedField) && (
+                                            <div className="rounded-xl border-2 border-slate-200 bg-slate-50/30 p-4">
+                                                <h4 className="text-sm font-bold flex items-center gap-1.5 text-slate-600 mb-3">
+                                                    📎 Đề xuất
+                                                </h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    {beforeFields.map(f => (
+                                                        <div key={f.key}>
+                                                            <label className="block text-xs font-medium text-slate-500 mb-1">{f.label}</label>
+                                                            <input type="text" placeholder={f.placeholder}
+                                                                value={form[f.key] as string ?? ''}
+                                                                onChange={e => updateField(f.key, e.target.value)}
+                                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white hover:bg-white transition-colors"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                    {expectedField && (
+                                                        <div className="md:col-span-2">
+                                                            <label className="block text-xs font-medium text-slate-500 mb-1">{expectedField.label}</label>
+                                                            <input type="text" placeholder={expectedField.placeholder}
+                                                                value={form[expectedField.key] as string ?? ''}
+                                                                onChange={e => updateField(expectedField.key, e.target.value)}
+                                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white hover:bg-white transition-colors"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* ④ 💬 Góp ý (indigo) + 📋 Thẩm định (violet) */}
+                                        {otherGroups.map(g => renderDeadlineGroup(g))}
+
+                                        {/* ⑤ 🏛 Trình ban hành — submitted, issuance, notes (khung slate) */}
+                                        {afterFields.length > 0 && (
+                                            <div className="rounded-xl border-2 border-slate-200 bg-slate-50/30 p-4">
+                                                <h4 className="text-sm font-bold flex items-center gap-1.5 text-slate-600 mb-3">
+                                                    🏛 Trình ban hành
+                                                </h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    {afterFields.map(f => (
+                                                        <div key={f.key} className={f.type === 'textarea' ? 'md:col-span-2' : ''}>
+                                                            <label className="block text-xs font-medium text-slate-500 mb-1">{f.label}</label>
+                                                            {f.type === 'textarea' ? (
+                                                                <textarea rows={2} placeholder={f.placeholder}
+                                                                    value={form[f.key] as string ?? ''}
+                                                                    onChange={e => updateField(f.key, e.target.value)}
+                                                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white hover:bg-white transition-colors resize-none"
+                                                                />
+                                                            ) : (
+                                                                <input type={f.type ?? 'text'} placeholder={f.placeholder}
+                                                                    value={form[f.key] as string ?? ''}
+                                                                    onChange={e => updateField(f.key, f.type === 'number' ? Number(e.target.value) : e.target.value)}
+                                                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white hover:bg-white transition-colors"
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
-                                ))}
-                            </div>
+                                )
+                            })()}
                         </section>
                     </div>
                 </div>

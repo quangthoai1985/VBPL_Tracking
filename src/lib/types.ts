@@ -4,6 +4,7 @@
 export type DocType = 'NQ' | 'QD_UBND' | 'QD_CT_UBND'
 export type Status = 'can_xu_ly' | 'da_xu_ly'
 export type DocCategory = 'van_ban_tiep_tuc' | 'van_ban_moi'
+export type ProcedureType = 'thuong' | 'rut_gon'
 export type UserRole = 'admin' | 'chuyen_vien' | 'co_quan' | 'guest'
 
 export interface Agency {
@@ -57,14 +58,23 @@ export interface Document {
 
     // Workflow steps
     reg_doc_agency: string | null
+    reg_doc_agency_date: string | null  // kiểu date ISO (YYYY-MM-DD)
     reg_doc_reply: string | null
+    reg_doc_reply_date: string | null   // kiểu date ISO (YYYY-MM-DD)
     reg_doc_ubnd: string | null
     approval_hdnd: string | null
+    // Loại quy trình (sau approval_hdnd)
+    procedure_type: ProcedureType | null
+
     expected_date: string | null
     feedback_sent: string | null
+    feedback_sent_date: string | null   // kiểu date ISO (YYYY-MM-DD)
     feedback_reply: string | null
+    feedback_reply_date: string | null  // kiểu date ISO (YYYY-MM-DD)
     appraisal_sent: string | null
+    appraisal_sent_date: string | null  // kiểu date ISO (YYYY-MM-DD)
     appraisal_reply: string | null
+    appraisal_reply_date: string | null // kiểu date ISO (YYYY-MM-DD)
     submitted_ubnd: string | null
     submitted_hdnd: string | null
     submitted_vb: string | null
@@ -152,6 +162,20 @@ export const CATEGORY_FIELDS = {
         { key: 'count_vm_bai_bo', label: 'Bãi bỏ' },
     ],
 } as const
+
+export const PROCEDURE_TYPE_LABELS: Record<ProcedureType, string> = {
+    thuong: 'Thông thường',
+    rut_gon: 'Rút gọn',
+}
+
+// Số ngày deadline cho từng loại quy trình
+// Số ngày deadline đăng ký VB (không phụ thuộc quy trình)
+export const REG_DOC_DEADLINE_DAYS = 5
+
+export const DEADLINE_DAYS: Record<ProcedureType, { feedback: number; appraisal: number }> = {
+    thuong: { feedback: 10, appraisal: 15 },
+    rut_gon: { feedback: 3, appraisal: 7 },
+}
 
 export const ROLE_LABELS: Record<UserRole, string> = {
     admin: 'Quản trị viên',

@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
-    Document, DocType, Status, DocCategory, Agency, Handler,
-    CATEGORY_FIELDS, DOC_CATEGORY_LABELS,
+    Document, DocType, Status, DocCategory, ProcedureType, Agency, Handler,
+    CATEGORY_FIELDS, DOC_CATEGORY_LABELS, PROCEDURE_TYPE_LABELS, DEADLINE_DAYS, REG_DOC_DEADLINE_DAYS,
 } from '@/lib/types'
 import { cn, truncate } from '@/lib/utils'
 import { Search, RefreshCw, Plus, Download, ChevronUp, ChevronDown, Trash2, Loader2, AlertTriangle } from 'lucide-react'
@@ -55,14 +55,127 @@ function strCell(val: string | null | undefined, maxLen = 60) {
     return val ? <span>{truncate(val, maxLen)}</span> : <span className="text-slate-300">—</span>
 }
 
+// ─── Helper tính deadline và hiển thị badge cảnh báo ───────────────────────────
+type DeadlineStatus = 'ok' | 'warning' | 'overdue' | 'late_replied' | 'on_time' | 'none'
+
+function calcDeadlineStatus(
+    sentDateStr: string | null | undefined,
+    replyDateStr: string | null | undefined,
+    maxDays: number,
+): { status: DeadlineStatus; daysLeft?: number; deadlineStr?: string } {
+    if (!sentDateStr) return { status: 'none' }
+    const sentDate = new Date(sentDateStr)
+    if (isNaN(sentDate.getTime())) return { status: 'none' }
+    const deadline = new Date(sentDate)
+    deadline.setDate(deadline.getDate() + maxDays)
+    const deadlineStr = deadline.toLocaleDateString('vi-VN')
+
+    if (replyDateStr) {
+        const replyDate = new Date(replyDateStr)
+        if (isNaN(replyDate.getTime())) return { status: 'none' }
+        return replyDate > deadline
+            ? { status: 'late_replied', deadlineStr }
+            : { status: 'on_time', deadlineStr }
+    }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const daysLeft = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    if (daysLeft < 0) return { status: 'overdue', daysLeft: Math.abs(daysLeft), deadlineStr }
+    if (daysLeft <= 2) return { status: 'warning', daysLeft, deadlineStr }
+    return { status: 'ok', daysLeft, deadlineStr }
+}
+
+function DeadlineBadgeCell({ doc, type }: { doc: Document; type: 'registration' | 'feedback' | 'appraisal' }) {
+    let maxDays: number
+    let sentDate: string | null
+    let replyDate: string | null
+    let replyText: string | null
+
+    if (type === 'registration') {
+        maxDays = REG_DOC_DEADLINE_DAYS
+        sentDate = doc.reg_doc_agency_date ?? null
+        replyDate = doc.reg_doc_reply_date ?? null
+        replyText = doc.reg_doc_reply ?? null
+    } else {
+        const procType = doc.procedure_type as ProcedureType | null
+        if (!procType || !DEADLINE_DAYS[procType]) return <span className="text-slate-300">—</span>
+        const dl = DEADLINE_DAYS[procType]
+        maxDays = type === 'feedback' ? dl.feedback : dl.appraisal
+        sentDate = type === 'feedback' ? doc.feedback_sent_date : doc.appraisal_sent_date
+        replyDate = type === 'feedback' ? doc.feedback_reply_date : doc.appraisal_reply_date
+        replyText = type === 'feedback' ? doc.feedback_reply : doc.appraisal_reply
+    }
+
+    const { status, daysLeft, deadlineStr } = calcDeadlineStatus(sentDate, replyDate, maxDays)
+
+    if (status === 'none') return strCell(replyText)
+
+    const wrapClass = cn(
+        'rounded-lg px-2 py-1 text-[11px] leading-snug',
+        status === 'overdue' && 'bg-red-50 border border-red-300',
+        status === 'warning' && 'bg-amber-50 border border-amber-300',
+        status === 'late_replied' && 'bg-red-50 border border-red-200',
+        status === 'on_time' && 'bg-green-50 border border-green-200',
+        status === 'ok' && '',
+    )
+
+    return (
+        <div className={wrapClass}>
+            {replyText && <p className="text-slate-700 mb-0.5">{truncate(replyText, 40)}</p>}
+            {status === 'overdue' && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700">
+                    🔴 Quá hạn {daysLeft} ngày!
+                </span>
+            )}
+            {status === 'warning' && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700">
+                    🟡 Còn {daysLeft} ngày (hạn: {deadlineStr})
+                </span>
+            )}
+            {status === 'late_replied' && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600">
+                    🔴 Trễ hạn ({deadlineStr})
+                </span>
+            )}
+            {status === 'on_time' && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700">
+                    🟢 Đúng hạn ✓
+                </span>
+            )}
+            {status === 'ok' && (
+                <span className="text-[10px] text-blue-500">
+                    Hạn: {deadlineStr}
+                </span>
+            )}
+        </div>
+    )
+}
+
+// ─── Badge loại quy trình ──────────────────────────────────────────────────────
+function ProcedureTypeBadge({ doc }: { doc: Document }) {
+    const pt = doc.procedure_type as ProcedureType | null
+    if (!pt) return <span className="text-slate-300">—</span>
+    return (
+        <span className={cn(
+            'inline-flex px-2 py-0.5 rounded text-[11px] font-semibold',
+            pt === 'thuong'
+                ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                : 'bg-orange-100 text-orange-800 border border-orange-200',
+        )}>
+            {PROCEDURE_TYPE_LABELS[pt]}
+        </span>
+    )
+}
 // ─── Cấu hình cột theo từng loại trang ────────────────────────────────────────
 
 // NQ cần xử lý – 13 cột sau người xử lý
 const COLS_NQ_CAN: ColDef[] = [
     { key: 'reg_doc_agency', label: 'VB đăng ký XD NQ (cơ quan ST)', minW: 140, render: d => strCell(d.reg_doc_agency) },
-    { key: 'reg_doc_reply', label: 'Phúc đáp', minW: 110, render: d => strCell(d.reg_doc_reply) },
+    { key: 'reg_doc_reply', label: 'Phúc đáp đăng ký', minW: 140, render: d => <DeadlineBadgeCell doc={d} type="registration" /> },
     { key: 'reg_doc_ubnd', label: 'VB đăng ký XD NQ (UBND tỉnh)', minW: 140, render: d => strCell(d.reg_doc_ubnd) },
     { key: 'approval_hdnd', label: 'Ý kiến TT.HĐND tỉnh', minW: 130, render: d => strCell(d.approval_hdnd) },
+    { key: 'procedure_type', label: 'Quy trình', minW: 100, render: d => <ProcedureTypeBadge doc={d} /> },
     {
         key: 'expected_date', label: 'Dự kiến trình', minW: 110, sortable: 'expected_date',
         render: d => d.expected_date
@@ -70,9 +183,9 @@ const COLS_NQ_CAN: ColDef[] = [
             : <span className="text-slate-300">—</span>
     },
     { key: 'feedback_sent', label: 'Gửi lấy ý kiến góp ý', minW: 130, render: d => strCell(d.feedback_sent) },
-    { key: 'feedback_reply', label: 'Phúc đáp ý kiến', minW: 110, render: d => strCell(d.feedback_reply) },
+    { key: 'feedback_reply', label: 'Phúc đáp ý kiến', minW: 140, render: d => <DeadlineBadgeCell doc={d} type="feedback" /> },
     { key: 'appraisal_sent', label: 'Gửi Sở TP thẩm định', minW: 130, render: d => strCell(d.appraisal_sent) },
-    { key: 'appraisal_reply', label: 'Phúc đáp thẩm định', minW: 110, render: d => strCell(d.appraisal_reply) },
+    { key: 'appraisal_reply', label: 'Phúc đáp thẩm định', minW: 140, render: d => <DeadlineBadgeCell doc={d} type="appraisal" /> },
     { key: 'submitted_ubnd', label: 'Cơ quan trình UBND', minW: 120, render: d => strCell(d.submitted_ubnd) },
     { key: 'submitted_hdnd', label: 'UBND trình HĐND', minW: 110, render: d => strCell(d.submitted_hdnd) },
     {
@@ -93,8 +206,9 @@ const COLS_NQ_DA: ColDef[] = [
 // QD UBND cần xử lý
 const COLS_QD_UBND_CAN: ColDef[] = [
     { key: 'reg_doc_agency', label: 'VB đăng ký xây dựng', minW: 130, render: d => strCell(d.reg_doc_agency) },
-    { key: 'reg_doc_reply', label: 'Phúc đáp', minW: 110, render: d => strCell(d.reg_doc_reply) },
+    { key: 'reg_doc_reply', label: 'Phúc đáp đăng ký', minW: 140, render: d => <DeadlineBadgeCell doc={d} type="registration" /> },
     { key: 'approval_hdnd', label: 'Chấp thuận của UBND tỉnh', minW: 130, render: d => strCell(d.approval_hdnd) },
+    { key: 'procedure_type', label: 'Quy trình', minW: 100, render: d => <ProcedureTypeBadge doc={d} /> },
     {
         key: 'expected_date', label: 'Dự kiến trình', minW: 110, sortable: 'expected_date',
         render: d => d.expected_date
@@ -102,9 +216,9 @@ const COLS_QD_UBND_CAN: ColDef[] = [
             : <span className="text-slate-300">—</span>
     },
     { key: 'feedback_sent', label: 'VB lấy ý kiến góp ý', minW: 120, render: d => strCell(d.feedback_sent) },
-    { key: 'feedback_reply', label: 'Phúc đáp ý kiến', minW: 110, render: d => strCell(d.feedback_reply) },
+    { key: 'feedback_reply', label: 'Phúc đáp ý kiến', minW: 140, render: d => <DeadlineBadgeCell doc={d} type="feedback" /> },
     { key: 'appraisal_sent', label: 'VB gửi Sở TP thẩm định', minW: 130, render: d => strCell(d.appraisal_sent) },
-    { key: 'appraisal_reply', label: 'Phúc đáp thẩm định', minW: 110, render: d => strCell(d.appraisal_reply) },
+    { key: 'appraisal_reply', label: 'Phúc đáp thẩm định', minW: 140, render: d => <DeadlineBadgeCell doc={d} type="appraisal" /> },
     { key: 'submitted_vb', label: 'VB trình UBND ban hành', minW: 130, render: d => strCell(d.submitted_vb) },
     {
         key: 'issuance_number', label: 'Số/Ngày ban hành VBQPPL', minW: 160,
@@ -285,7 +399,7 @@ export default function DocumentsPage({ docType, status, title, description }: P
 
         let statsQuery = supabase
             .from('v_documents_full')
-            .select('doc_category, count_tt_thay_the, count_tt_bai_bo, count_tt_khong_xu_ly, count_tt_het_hieu_luc, count_vm_ban_hanh_moi, count_vm_sua_doi_bo_sung, count_vm_thay_the, count_vm_bai_bo, count_thay_the, count_bai_bo, count_ban_hanh_moi, count_chua_xac_dinh, handler_name, needs_review')
+            .select('doc_category, count_tt_thay_the, count_tt_bai_bo, count_tt_khong_xu_ly, count_tt_het_hieu_luc, count_vm_ban_hanh_moi, count_vm_sua_doi_bo_sung, count_vm_thay_the, count_vm_bai_bo, count_thay_the, count_bai_bo, count_ban_hanh_moi, count_chua_xac_dinh, handler_name, needs_review, procedure_type, feedback_sent_date, feedback_reply_date, appraisal_sent_date, appraisal_reply_date')
             .eq('doc_type', docType)
             .eq('status', status)
 
