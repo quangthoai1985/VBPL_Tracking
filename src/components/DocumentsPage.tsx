@@ -148,7 +148,7 @@ function ProcessingFormBadges({ doc }: { doc: Document }) {
     if (cat === 'van_ban_tiep_tuc') {
         if (doc.count_tt_thay_the > 0) badges.push({ label: 'Thay thế', count: doc.count_tt_thay_the, color: 'bg-blue-100 text-blue-800' })
         if (doc.count_tt_bai_bo > 0) badges.push({ label: 'Bãi bỏ', count: doc.count_tt_bai_bo, color: 'bg-red-100 text-red-800' })
-        if (doc.count_tt_khong_xu_ly > 0) badges.push({ label: 'Không XL', count: doc.count_tt_khong_xu_ly, color: 'bg-slate-100 text-slate-800' })
+        if (doc.count_tt_khong_xu_ly > 0) badges.push({ label: 'Giữ nguyên', count: doc.count_tt_khong_xu_ly, color: 'bg-slate-100 text-slate-800' })
         if (doc.count_tt_het_hieu_luc > 0) badges.push({ label: 'Hết HL', count: doc.count_tt_het_hieu_luc, color: 'bg-purple-100 text-purple-800' })
     } else if (cat === 'van_ban_moi') {
         if (doc.count_vm_ban_hanh_moi > 0) badges.push({ label: 'Ban hành mới', count: doc.count_vm_ban_hanh_moi, color: 'bg-green-100 text-green-800' })
@@ -167,14 +167,14 @@ function ProcessingFormBadges({ doc }: { doc: Document }) {
         ].filter(b => b.count > 0)
         if (legacyAll.length > 0) {
             return (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                     {legacyAll.map(f => (
-                        <span key={f.label}
-                            className={cn('inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold', f.color)}
-                        >
-                            <span>{f.count}</span>
-                            <span className="font-normal opacity-75">{f.label}</span>
-                        </span>
+                        <div key={f.label} className="flex items-center gap-1.5">
+                            <span className="inline-flex items-center justify-center min-w-[26px] h-[26px] px-1.5 rounded-full bg-orange-100 text-orange-700 font-bold text-xs">{f.count}</span>
+                            <span className={cn('px-2 py-0.5 rounded text-[11px] font-medium', f.color)}>
+                                {f.label}
+                            </span>
+                        </div>
                     ))}
                 </div>
             )
@@ -182,20 +182,15 @@ function ProcessingFormBadges({ doc }: { doc: Document }) {
         return <span className="text-slate-300">—</span>
     }
 
-    // Nhóm label nhỏ trước badges
-    const catLabel = cat === 'van_ban_tiep_tuc' ? 'TT' : 'Mới'
-    const catColor = cat === 'van_ban_tiep_tuc' ? 'text-indigo-500' : 'text-emerald-500'
-
     return (
-        <div className="flex flex-wrap gap-1 items-center">
-            <span className={cn('text-[9px] font-bold uppercase tracking-wider mr-0.5', catColor)}>{catLabel}</span>
+        <div className="flex flex-wrap gap-1.5 items-center">
             {badges.map(f => (
-                <span key={f.label}
-                    className={cn('inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold', f.color)}
-                >
-                    <span>{f.count}</span>
-                    <span className="font-normal opacity-75">{f.label}</span>
-                </span>
+                <div key={f.label} className="flex items-center gap-1.5">
+                    <span className="inline-flex items-center justify-center min-w-[26px] h-[26px] px-1.5 rounded-full bg-orange-100 text-orange-700 font-bold text-xs">{f.count}</span>
+                    <span className={cn('px-2 py-0.5 rounded text-[11px] font-medium', f.color)}>
+                        {f.label}
+                    </span>
+                </div>
             ))}
         </div>
     )
@@ -495,7 +490,7 @@ export default function DocumentsPage({ docType, status, title, description }: P
                                     </span>
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-slate-200 rounded-md text-xs shadow-sm">
                                         <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                                        <span className="text-slate-700">Không xử lý</span>
+                                        <span className="text-slate-700">Giữ nguyên</span>
                                         <span className="font-bold text-slate-600">{stats.ttKhongXuLy}</span>
                                     </span>
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-purple-200 rounded-md text-xs shadow-sm">

@@ -411,7 +411,7 @@ export default function AddDocumentModal({ open, onClose, onSuccess, docType, st
                                                 </p>
                                                 <p className="text-xs text-slate-400 mt-0.5">
                                                     {cat === 'van_ban_tiep_tuc'
-                                                        ? 'Thay thế, Bãi bỏ, Không xử lý, Hết hiệu lực'
+                                                        ? 'Thay thế, Bãi bỏ, Giữ nguyên, Hết hiệu lực'
                                                         : 'Ban hành mới, Sửa đổi bổ sung, Thay thế, Bãi bỏ'
                                                     }
                                                 </p>

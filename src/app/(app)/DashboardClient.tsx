@@ -5,7 +5,7 @@ import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
     Legend,
 } from 'recharts'
-import { FileText, CheckSquare, Layers, TrendingUp, RefreshCw } from 'lucide-react'
+import { FileText, CheckSquare, Layers, TrendingUp, RefreshCw, AlertTriangle } from 'lucide-react'
 import { DocType } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
@@ -26,6 +26,7 @@ interface DocData {
     count_vm_sua_doi_bo_sung: number
     count_vm_thay_the: number
     count_vm_bai_bo: number
+    needs_review: boolean
     // Legacy
     count_thay_the: number
     count_bai_bo: number
@@ -110,7 +111,7 @@ function computeLinhVucTable(
         const canXuLy = matchDocs.filter(d => d.status === 'can_xu_ly').length
         const daXuLyDocs = matchDocs.filter(d => d.status === 'da_xu_ly')
 
-        // Tính "Bãi bỏ / Không xử lý": nhóm VB tiếp tục (bãi bỏ + không XL + hết hiệu lực)
+        // Tính "Bãi bỏ / Giữ nguyên": nhóm VB tiếp tục (bãi bỏ + không XL + hết hiệu lực)
         const baiBo = daXuLyDocs.reduce((sum, d) => {
             const newVal = (Number(d.count_tt_bai_bo) || 0)
                 + (Number(d.count_tt_khong_xu_ly) || 0)
@@ -157,7 +158,7 @@ export default function DashboardClient() {
         try {
             const { data: rawDocs } = await supabase
                 .from('documents')
-                .select('id, doc_type, status, handler_name, agency_id, doc_category, count_tt_thay_the, count_tt_bai_bo, count_tt_khong_xu_ly, count_tt_het_hieu_luc, count_vm_ban_hanh_moi, count_vm_sua_doi_bo_sung, count_vm_thay_the, count_vm_bai_bo, count_thay_the, count_bai_bo, count_ban_hanh_moi, count_chua_xac_dinh')
+                .select('id, doc_type, status, handler_name, agency_id, doc_category, count_tt_thay_the, count_tt_bai_bo, count_tt_khong_xu_ly, count_tt_het_hieu_luc, count_vm_ban_hanh_moi, count_vm_sua_doi_bo_sung, count_vm_thay_the, count_vm_bai_bo, count_thay_the, count_bai_bo, count_ban_hanh_moi, count_chua_xac_dinh, needs_review')
 
             const { data: rawAgencies } = await supabase
                 .from('agencies')
@@ -190,6 +191,11 @@ export default function DashboardClient() {
     const nqTable = computeLinhVucTable(docs, 'NQ', NQ_LINH_VUC)
     const qdTable = computeLinhVucTable(docs, 'QD_UBND', QD_LINH_VUC)
 
+    // Calculate needs review
+    const nqNeedsReview = docs.filter(d => d.doc_type === 'NQ' && d.needs_review).length
+    const qdNeedsReview = docs.filter(d => d.doc_type === 'QD_UBND' && d.needs_review).length
+    const totalNeedsReview = nqNeedsReview + qdNeedsReview
+
     // Totals
     const nqTotalCanXL = nqTable.reduce((s, r) => s + r.can_xu_ly, 0)
     const nqTotalBaiBo = nqTable.reduce((s, r) => s + r.bai_bo_khong_xl, 0)
@@ -206,20 +212,43 @@ export default function DashboardClient() {
     const total = totalCanXuLy + totalDaXuLy
     const progressPct = total > 0 ? Math.round((totalDaXuLy / total) * 100) : 0
 
-    // Thống kê hình thức xử lý theo 2 nhóm
+    // Thống kê hình thức xử lý theo 2 nhóm × 2 trạng thái × 2 loại VB
     const sumField = (arr: DocData[], field: keyof DocData) => arr.reduce((acc, d) => acc + (Number(d[field]) || 0), 0)
 
-    const ttThayThe = sumField(docs, 'count_tt_thay_the')
-    const ttBaiBo = sumField(docs, 'count_tt_bai_bo')
-    const ttKhongXuLy = sumField(docs, 'count_tt_khong_xu_ly')
-    const ttHetHieuLuc = sumField(docs, 'count_tt_het_hieu_luc')
-    const ttTotal = ttThayThe + ttBaiBo + ttKhongXuLy + ttHetHieuLuc
+    const daXuLyDocs = docs.filter(d => d.status === 'da_xu_ly')
+    const dangXuLyDocs = docs.filter(d => d.status === 'can_xu_ly')
 
-    const vmBanHanhMoi = sumField(docs, 'count_vm_ban_hanh_moi')
-    const vmSuaDoiBS = sumField(docs, 'count_vm_sua_doi_bo_sung')
-    const vmThayThe = sumField(docs, 'count_vm_thay_the')
-    const vmBaiBo = sumField(docs, 'count_vm_bai_bo')
-    const vmTotal = vmBanHanhMoi + vmSuaDoiBS + vmThayThe + vmBaiBo
+    // Helper: tính stats cho 1 subset docs
+    const calcTTStats = (subset: DocData[]) => {
+        const thayThe = sumField(subset, 'count_tt_thay_the')
+        const baiBo = sumField(subset, 'count_tt_bai_bo')
+        const khongXuLy = sumField(subset, 'count_tt_khong_xu_ly')
+        const hetHieuLuc = sumField(subset, 'count_tt_het_hieu_luc')
+        return { thayThe, baiBo, khongXuLy, hetHieuLuc, total: thayThe + baiBo + khongXuLy + hetHieuLuc }
+    }
+    const calcVMStats = (subset: DocData[]) => {
+        const banHanhMoi = sumField(subset, 'count_vm_ban_hanh_moi')
+        const suaDoiBS = sumField(subset, 'count_vm_sua_doi_bo_sung')
+        const thayThe = sumField(subset, 'count_vm_thay_the')
+        const baiBo = sumField(subset, 'count_vm_bai_bo')
+        return { banHanhMoi, suaDoiBS, thayThe, baiBo, total: banHanhMoi + suaDoiBS + thayThe + baiBo }
+    }
+
+    // VB tiếp tục áp dụng: Đang xử lý vs Đã xử lý (tổng + NQ + QĐ)
+    const ttDangXL = calcTTStats(dangXuLyDocs)
+    const ttDangXL_NQ = calcTTStats(dangXuLyDocs.filter(d => d.doc_type === 'NQ'))
+    const ttDangXL_QD = calcTTStats(dangXuLyDocs.filter(d => d.doc_type === 'QD_UBND'))
+    const ttDaXL = calcTTStats(daXuLyDocs)
+    const ttDaXL_NQ = calcTTStats(daXuLyDocs.filter(d => d.doc_type === 'NQ'))
+    const ttDaXL_QD = calcTTStats(daXuLyDocs.filter(d => d.doc_type === 'QD_UBND'))
+
+    // VB mới: Đang xử lý vs Đã xử lý (tổng + NQ + QĐ)
+    const vmDangXL = calcVMStats(dangXuLyDocs)
+    const vmDangXL_NQ = calcVMStats(dangXuLyDocs.filter(d => d.doc_type === 'NQ'))
+    const vmDangXL_QD = calcVMStats(dangXuLyDocs.filter(d => d.doc_type === 'QD_UBND'))
+    const vmDaXL = calcVMStats(daXuLyDocs)
+    const vmDaXL_NQ = calcVMStats(daXuLyDocs.filter(d => d.doc_type === 'NQ'))
+    const vmDaXL_QD = calcVMStats(daXuLyDocs.filter(d => d.doc_type === 'QD_UBND'))
 
     // Bar chart: theo chuyên viên
     const handlerMap: Record<string, { name: string; can_xu_ly: number; da_xu_ly: number }> = {}
@@ -233,6 +262,13 @@ export default function DashboardClient() {
 
     // Cards
     const cards = [
+        {
+            label: 'Cần rà soát HTXL',
+            value: totalNeedsReview.toLocaleString(),
+            icon: AlertTriangle,
+            color: 'from-amber-500 to-amber-600',
+            sub: `NQ: ${nqNeedsReview} · QĐ UBND: ${qdNeedsReview}`,
+        },
         {
             label: 'Tổng VB cần xử lý',
             value: totalCanXuLy.toLocaleString(),
@@ -284,7 +320,7 @@ export default function DashboardClient() {
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
                     {cards.map((card) => {
                         const Icon = card.icon
                         return (
@@ -309,48 +345,122 @@ export default function DashboardClient() {
                 </div>
 
                 {/* ====== THỐNG KÊ HÌNH THỨC XỬ LÝ ====== */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Nhóm 1: Văn bản tiếp tục áp dụng */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden border-t-4 border-indigo-500">
-                        <div className="px-5 py-4 bg-indigo-50/60 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
-                                    <FileText className="w-4 h-4 text-white" />
+                {/* Nhóm 1: Văn bản tiếp tục áp dụng */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden border-t-4 border-indigo-500">
+                    <div className="px-5 py-4 bg-indigo-50/60 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
+                            <FileText className="w-4 h-4 text-white" />
+                        </div>
+                        <h2 className="font-bold text-base text-indigo-800">Văn bản tiếp tục áp dụng</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                        {/* Đang xử lý */}
+                        <div className="p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+                                    <span className="text-sm font-semibold text-orange-700">Đang xử lý</span>
                                 </div>
-                                <h2 className="font-bold text-base text-indigo-800">Văn bản tiếp tục áp dụng</h2>
+                                <span className="text-2xl font-bold text-orange-600">{ttDangXL.total}</span>
                             </div>
-                            <div className="text-right">
-                                <p className="text-2xl font-bold text-indigo-700">{ttTotal}</p>
-                                <p className="text-[10px] text-indigo-400 uppercase tracking-wider font-semibold">Tổng cộng</p>
+                            <div className="flex gap-3 mb-4">
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full px-2.5 py-1">
+                                    NQ: <span className="font-bold text-slate-700">{ttDangXL_NQ.total}</span>
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full px-2.5 py-1">
+                                    QĐ UBND: <span className="font-bold text-slate-700">{ttDangXL_QD.total}</span>
+                                </span>
+                            </div>
+                            <div className="space-y-2.5">
+                                <StatRow label="Thay thế" value={ttDangXL.thayThe} total={ttDangXL.total} color="bg-blue-500" />
+                                <StatRow label="Bãi bỏ" value={ttDangXL.baiBo} total={ttDangXL.total} color="bg-red-500" />
+                                <StatRow label="Giữ nguyên" value={ttDangXL.khongXuLy} total={ttDangXL.total} color="bg-slate-400" />
+                                <StatRow label="Hết hiệu lực" value={ttDangXL.hetHieuLuc} total={ttDangXL.total} color="bg-purple-500" />
                             </div>
                         </div>
-                        <div className="p-5 space-y-3">
-                            <StatRow label="Thay thế" value={ttThayThe} total={ttTotal} color="bg-blue-500" />
-                            <StatRow label="Bãi bỏ" value={ttBaiBo} total={ttTotal} color="bg-red-500" />
-                            <StatRow label="Không xử lý" value={ttKhongXuLy} total={ttTotal} color="bg-slate-400" />
-                            <StatRow label="Hết hiệu lực theo thời gian" value={ttHetHieuLuc} total={ttTotal} color="bg-purple-500" />
+                        {/* Đã xử lý */}
+                        <div className="p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                    <span className="text-sm font-semibold text-green-700">Đã xử lý</span>
+                                </div>
+                                <span className="text-2xl font-bold text-green-600">{ttDaXL.total}</span>
+                            </div>
+                            <div className="flex gap-3 mb-4">
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full px-2.5 py-1">
+                                    NQ: <span className="font-bold text-slate-700">{ttDaXL_NQ.total}</span>
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full px-2.5 py-1">
+                                    QĐ UBND: <span className="font-bold text-slate-700">{ttDaXL_QD.total}</span>
+                                </span>
+                            </div>
+                            <div className="space-y-2.5">
+                                <StatRow label="Thay thế" value={ttDaXL.thayThe} total={ttDaXL.total} color="bg-blue-500" />
+                                <StatRow label="Bãi bỏ" value={ttDaXL.baiBo} total={ttDaXL.total} color="bg-red-500" />
+                                <StatRow label="Giữ nguyên" value={ttDaXL.khongXuLy} total={ttDaXL.total} color="bg-slate-400" />
+                                <StatRow label="Hết hiệu lực" value={ttDaXL.hetHieuLuc} total={ttDaXL.total} color="bg-purple-500" />
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    {/* Nhóm 2: Văn bản mới */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden border-t-4 border-emerald-500">
-                        <div className="px-5 py-4 bg-emerald-50/60 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
-                                    <Layers className="w-4 h-4 text-white" />
+                {/* Nhóm 2: Văn bản mới */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden border-t-4 border-emerald-500">
+                    <div className="px-5 py-4 bg-emerald-50/60 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                            <Layers className="w-4 h-4 text-white" />
+                        </div>
+                        <h2 className="font-bold text-base text-emerald-800">Văn bản mới</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                        {/* Đang xử lý */}
+                        <div className="p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+                                    <span className="text-sm font-semibold text-orange-700">Đang xử lý</span>
                                 </div>
-                                <h2 className="font-bold text-base text-emerald-800">Văn bản mới</h2>
+                                <span className="text-2xl font-bold text-orange-600">{vmDangXL.total}</span>
                             </div>
-                            <div className="text-right">
-                                <p className="text-2xl font-bold text-emerald-700">{vmTotal}</p>
-                                <p className="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold">Tổng cộng</p>
+                            <div className="flex gap-3 mb-4">
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full px-2.5 py-1">
+                                    NQ: <span className="font-bold text-slate-700">{vmDangXL_NQ.total}</span>
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full px-2.5 py-1">
+                                    QĐ UBND: <span className="font-bold text-slate-700">{vmDangXL_QD.total}</span>
+                                </span>
+                            </div>
+                            <div className="space-y-2.5">
+                                <StatRow label="Ban hành mới" value={vmDangXL.banHanhMoi} total={vmDangXL.total} color="bg-green-500" />
+                                <StatRow label="Sửa đổi bổ sung" value={vmDangXL.suaDoiBS} total={vmDangXL.total} color="bg-teal-500" />
+                                <StatRow label="Thay thế" value={vmDangXL.thayThe} total={vmDangXL.total} color="bg-blue-500" />
+                                <StatRow label="Bãi bỏ" value={vmDangXL.baiBo} total={vmDangXL.total} color="bg-red-500" />
                             </div>
                         </div>
-                        <div className="p-5 space-y-3">
-                            <StatRow label="Ban hành mới" value={vmBanHanhMoi} total={vmTotal} color="bg-green-500" />
-                            <StatRow label="Sửa đổi bổ sung" value={vmSuaDoiBS} total={vmTotal} color="bg-teal-500" />
-                            <StatRow label="Thay thế" value={vmThayThe} total={vmTotal} color="bg-blue-500" />
-                            <StatRow label="Bãi bỏ" value={vmBaiBo} total={vmTotal} color="bg-red-500" />
+                        {/* Đã xử lý */}
+                        <div className="p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                    <span className="text-sm font-semibold text-green-700">Đã xử lý</span>
+                                </div>
+                                <span className="text-2xl font-bold text-green-600">{vmDaXL.total}</span>
+                            </div>
+                            <div className="flex gap-3 mb-4">
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full px-2.5 py-1">
+                                    NQ: <span className="font-bold text-slate-700">{vmDaXL_NQ.total}</span>
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full px-2.5 py-1">
+                                    QĐ UBND: <span className="font-bold text-slate-700">{vmDaXL_QD.total}</span>
+                                </span>
+                            </div>
+                            <div className="space-y-2.5">
+                                <StatRow label="Ban hành mới" value={vmDaXL.banHanhMoi} total={vmDaXL.total} color="bg-green-500" />
+                                <StatRow label="Sửa đổi bổ sung" value={vmDaXL.suaDoiBS} total={vmDaXL.total} color="bg-teal-500" />
+                                <StatRow label="Thay thế" value={vmDaXL.thayThe} total={vmDaXL.total} color="bg-blue-500" />
+                                <StatRow label="Bãi bỏ" value={vmDaXL.baiBo} total={vmDaXL.total} color="bg-red-500" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -468,7 +578,7 @@ function SummaryTable({
                         </tr>
                         <tr>
                             <th className="px-3 py-2 border-r border-slate-200 bg-slate-50 text-center w-28 font-medium text-slate-600">
-                                Bãi bỏ /<br />Không xử lý
+                                Bãi bỏ /<br />Giữ nguyên
                             </th>
                             <th className="px-3 py-2 border-r border-slate-200 bg-slate-50 text-center w-28 font-medium text-slate-600">
                                 Ban hành mới,<br />thay thế

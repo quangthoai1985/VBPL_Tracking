@@ -142,7 +142,7 @@ export const CATEGORY_FIELDS = {
     van_ban_tiep_tuc: [
         { key: 'count_tt_thay_the', label: 'Thay thế' },
         { key: 'count_tt_bai_bo', label: 'Bãi bỏ' },
-        { key: 'count_tt_khong_xu_ly', label: 'Không xử lý' },
+        { key: 'count_tt_khong_xu_ly', label: 'Giữ nguyên' },
         { key: 'count_tt_het_hieu_luc', label: 'Hết hiệu lực theo thời gian' },
     ],
     van_ban_moi: [
